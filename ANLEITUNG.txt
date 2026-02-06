@@ -1,0 +1,163 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║         🎮 WWM LIVE - SCHNELLSTART-ANLEITUNG 🎮             ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 SCHRITT-FÜR-SCHRITT ANLEITUNG
+═══════════════════════════════════════════════════════════════
+
+1️⃣  SERVER STARTEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   
+   Windows:
+   → Doppelklick auf "start-server.bat"
+   
+   Mac/Linux:
+   → Terminal öffnen
+   → In wwm-live Ordner navigieren
+   → ./start-server.sh ausführen
+
+
+2️⃣  HOST-ANSICHT ÖFFNEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   
+   → Browser öffnen
+   → Gehe zu: http://localhost:8080/host.html
+   → QR-Code wird angezeigt
+
+
+3️⃣  SPIELER BEITRETEN LASSEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   
+   → Spieler scannen QR-Code mit Handy
+   ODER
+   → Spieler geben URL ein (wird angezeigt)
+   
+   ⚠️  WICHTIG: Alle müssen im gleichen WLAN sein!
+
+
+4️⃣  SPIEL STARTEN
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   
+   → Warte bis genug Spieler da sind
+   → Klicke "Spiel starten"
+   → Lies die Frage vor
+   → Nach 30 Sek: "Auflösung zeigen"
+   → "Nächste Frage"
+
+
+═══════════════════════════════════════════════════════════════
+🎯 JOKER-SYSTEM
+═══════════════════════════════════════════════════════════════
+
+🎯 50:50 JOKER
+   → Entfernt 2 falsche Antworten
+   → Klassisch und einfach
+
+👥 PUBLIKUMSJOKER (Special!)
+   → Spieler wählt Joker UND Antwort
+   → Hat die Mehrheit recht? → Spieler auch richtig
+   → Hat die Mehrheit falsch? → Eigene Wahl zählt
+
+📞 TELEFONJOKER (Special!)
+   → Spieler ruft einen Mitspieler an
+   → Angerufener wird informiert (spielt normal weiter)
+   → Hat Angerufener recht? → Anrufer auch richtig
+   → Hat Angerufener falsch? → Eigene Wahl zählt
+
+
+═══════════════════════════════════════════════════════════════
+⚙️  NETZWERK-EINRICHTUNG
+═══════════════════════════════════════════════════════════════
+
+OPTION A: Schul-WLAN (Empfohlen)
+────────────────────────────────────────────────────────────
+• Notebook im Schul-WLAN
+• Spieler verbinden sich mit gleichem WLAN
+• Notebook IP-Adresse herausfinden:
+  - Windows: ipconfig (im cmd)
+  - Mac: ifconfig (im Terminal)
+  - Suche nach: 192.168.x.x
+• Spieler gehen auf: http://[DEINE-IP]:8080/player.html
+
+
+OPTION B: Notebook als Hotspot
+────────────────────────────────────────────────────────────
+• Aktiviere Hotspot auf Notebook
+• Spieler verbinden sich mit deinem Hotspot
+• Spieler gehen auf: http://192.168.137.1:8080/player.html
+
+
+═══════════════════════════════════════════════════════════════
+🔧 HÄUFIGE PROBLEME & LÖSUNGEN
+═══════════════════════════════════════════════════════════════
+
+❌ "Server startet nicht"
+   ✅ Installiere Python: https://www.python.org/downloads/
+
+❌ "Spieler können nicht beitreten"
+   ✅ Prüfe: Alle im gleichen WLAN?
+   ✅ Prüfe: Firewall blockt Port 8080?
+
+❌ "QR-Code wird nicht angezeigt"
+   ✅ Internetverbindung nötig für QR-Library
+   ✅ Alternative: URL manuell eingeben
+
+❌ "Verbindung bricht ab"
+   ✅ Stabile Internetverbindung sicherstellen
+   ✅ PeerJS benötigt Internet
+
+
+═══════════════════════════════════════════════════════════════
+✏️  EIGENE FRAGEN HINZUFÜGEN
+═══════════════════════════════════════════════════════════════
+
+1. Öffne "host.html" mit Texteditor
+2. Suche nach "const questions = ["
+3. Füge Fragen hinzu nach diesem Muster:
+
+   {
+       question: "Deine Frage?",
+       answers: ["A", "B", "C", "D"],
+       correct: 1  // 0=A, 1=B, 2=C, 3=D
+   },
+
+4. Speichern & fertig!
+
+
+═══════════════════════════════════════════════════════════════
+📊 ZWEI-BILDSCHIRM-SETUP
+═══════════════════════════════════════════════════════════════
+
+BILDSCHIRM 1 (Beamer/Hauptscreen):
+   → Zeigt Fragen & Antworten
+   → Für alle Spieler sichtbar
+
+BILDSCHIRM 2 (Host-Monitor):
+   → Spielerliste mit Status
+   → Wer hat geantwortet?
+   → Wer ist noch dabei?
+
+
+═══════════════════════════════════════════════════════════════
+💡 TIPPS FÜR DIE TAGUNG
+═══════════════════════════════════════════════════════════════
+
+✓ Vorher testen mit 2-3 Kollegen
+✓ Sicherstellen dass WLAN stabil ist
+✓ Backup-Plan: Mobile Hotspot bereithalten
+✓ QR-Code groß projizieren für einfaches Scannen
+✓ Spare Zeit: 2-3 Minuten zum Beitreten einplanen
+✓ Erkläre Joker-System vor dem Start
+
+
+═══════════════════════════════════════════════════════════════
+🎉 VIEL ERFOLG BEI DEINER TAGUNG!
+═══════════════════════════════════════════════════════════════
+
+Bei Fragen oder Problemen:
+→ Siehe README.md für Details
+→ Oder frag Claude! 😊
+
+                    Erstellt mit ❤️ für Bildung

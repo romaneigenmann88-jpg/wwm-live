@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWM Live - Host</title>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .setup-screen {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            max-width: 600px;
+            margin: 50px auto;
+        }
+
+        .setup-screen h2 {
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        #qrcode {
+            margin: 30px auto;
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .join-url {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 18px;
+            word-break: break-all;
+        }
+
+        .player-count {
+            font-size: 24px;
+            margin: 20px 0;
+            color: #4caf50;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff9800, #ff6f00);
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .game-screen.active {
+            display: block;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 12px;
+        }
+
+        .question-display {
+            background: linear-gradient(135deg, #1e3a5f, #2c5282);
+            border-radius: 16px;
+            padding: 40px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid rgba(58, 123, 213, 0.3);
+        }
+
+        .answers-display {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .answer-display {
+            background: linear-gradient(135deg, #1a2849, #243b5e);
+            border: 2px solid #3a7bd5;
+            border-radius: 12px;
+            padding: 25px;
+            font-size: 20px;
+        }
+
+        .answer-display .label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #ffd700;
+        }
+
+        .timer-display {
+            font-size: 48px;
+            text-align: center;
+            color: #ffd700;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .timer-display.warning {
+            color: #ff6f00;
+            animation: pulse 1s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .players-panel {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .players-panel h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+
+        .player-item {
+            background: rgba(26, 40, 73, 0.8);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #4caf50;
+        }
+
+        .player-item.dead {
+            opacity: 0.6;
+            border-left-color: #f44336;
+        }
+
+        .player-item.answered {
+            border-left-color: #ffd700;
+        }
+
+        .player-status {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .status-badge.alive {
+            background: #4caf50;
+        }
+
+        .status-badge.dead {
+            background: #f44336;
+        }
+
+        .status-badge.answered {
+            background: #ffd700;
+            color: #000;
+        }
+
+        .control-panel {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .results-display {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .results-display h3 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .result-item {
+            background: rgba(26, 40, 73, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-item.correct {
+            border-left: 4px solid #4caf50;
+        }
+
+        .result-item.wrong {
+            border-left: 4px solid #f44336;
+        }
+
+        .game-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .game-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .winner-display {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .winner-display h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(26, 40, 73, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 14px;
+            color: #a0c4ff;
+        }
+
+        .ip-input-container {
+            background: rgba(255, 152, 0, 0.1);
+            border: 2px solid #ff9800;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .ip-input-container h3 {
+            color: #ff9800;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .ip-input-container input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #3a7bd5;
+            border-radius: 8px;
+            background: rgba(26, 40, 73, 0.8);
+            color: #fff;
+            margin: 10px 0;
+        }
+
+        .ip-input-container small {
+            color: #a0c4ff;
+            font-size: 13px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .ip-hint {
+            background: rgba(26, 40, 73, 0.6);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .update-btn {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #fff;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .update-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Wer wird Millionär - LIVE Edition</h1>
+        
+        <!-- Setup Screen -->
+        <div id="setupScreen" class="setup-screen">
+            <h2>Spiel einrichten</h2>
+            
+            <div class="ip-input-container">
+                <h3>📡 Deine IP-Adresse</h3>
+                <input type="text" id="ipInput" placeholder="z.B. 192.168.1.145" value="">
+                <button class="update-btn" id="updateQrBtn">🔄 QR-Code aktualisieren</button>
+                <small>Windows: <code>ipconfig</code> | Mac/Linux: <code>ifconfig</code></small>
+                <div class="ip-hint">
+                    💡 Suche nach "IPv4" oder Adresse im Format 192.168.x.x<br>
+                    Dann hier eingeben und auf "QR-Code aktualisieren" klicken!
+                </div>
+            </div>
+
+            <p>Warte auf Spieler...</p>
+            <div id="qrcode"></div>
+            <div class="join-url" id="joinUrl">Lade...</div>
+            <div class="player-count">
+                <span id="playerCount">0</span> Spieler verbunden
+            </div>
+            <button class="btn" id="startGameBtn" disabled>Spiel starten</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="game-screen">
+            <div class="game-layout">
+                <div class="main-area">
+                    <div class="game-header">
+                        <div>
+                            <strong>Frage <span id="currentQuestion">1</span> von 15</strong>
+                        </div>
+                        <div>
+                            <strong>Aktive Spieler: <span id="activePlayers">0</span></strong>
+                        </div>
+                    </div>
+
+                    <div class="timer-display" id="timerDisplay">30</div>
+
+                    <div class="question-display" id="questionDisplay">
+                        Frage wird geladen...
+                    </div>
+
+                    <div class="answers-display" id="answersDisplay">
+                        <div class="answer-display">
+                            <span class="label">A:</span>
+                            <span>Antwort 1</span>
+                        </div>
+                        <div class="answer-display">
+                            <span class="label">B:</span>
+                            <span>Antwort 2</span>
+                        </div>
+                        <div class="answer-display">
+                            <span class="label">C:</span>
+                            <span>Antwort 3</span>
+                        </div>
+                        <div class="answer-display">
+                            <span class="label">D:</span>
+                            <span>Antwort 4</span>
+                        </div>
+                    </div>
+
+                    <div class="control-panel">
+                        <button class="btn" id="revealBtn" disabled>Auflösung zeigen</button>
+                        <button class="btn" id="nextBtn" disabled>Nächste Frage</button>
+                    </div>
+
+                    <div class="results-display" id="resultsDisplay" style="display: none;">
+                        <h3>Ergebnisse dieser Runde</h3>
+                        <div id="resultsList"></div>
+                    </div>
+                </div>
+
+                <div class="side-area">
+                    <div class="players-panel">
+                        <h3>Spieler (<span id="playerListCount">0</span>)</h3>
+                        <div id="playersList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fragen-Datenbank (15 Fragen)
+        const questions = [
+            {
+                question: "Welche Farbe hat ein Smaragd?",
+                answers: ["Rot", "Grün", "Blau", "Gelb"],
+                correct: 1
+            },
+            {
+                question: "Wie viele Beine hat eine Spinne?",
+                answers: ["6", "8", "10", "12"],
+                correct: 1
+            },
+            {
+                question: "Welcher Planet ist der Sonne am nächsten?",
+                answers: ["Venus", "Merkur", "Mars", "Erde"],
+                correct: 1
+            },
+            {
+                question: "In welchem Jahr fiel die Berliner Mauer?",
+                answers: ["1987", "1989", "1991", "1993"],
+                correct: 1
+            },
+            {
+                question: "Wie heisst die Hauptstadt von Australien?",
+                answers: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+                correct: 2
+            },
+            {
+                question: "Welches chemische Element hat das Symbol 'Au'?",
+                answers: ["Silber", "Gold", "Aluminium", "Kupfer"],
+                correct: 1
+            },
+            {
+                question: "Wie viele Spieler hat eine Fussballmannschaft auf dem Feld?",
+                answers: ["9", "10", "11", "12"],
+                correct: 2
+            },
+            {
+                question: "Wer schrieb 'Romeo und Julia'?",
+                answers: ["Charles Dickens", "William Shakespeare", "Mark Twain", "Jane Austen"],
+                correct: 1
+            },
+            {
+                question: "Welcher Ozean ist der grösste?",
+                answers: ["Atlantik", "Indischer Ozean", "Pazifik", "Arktischer Ozean"],
+                correct: 2
+            },
+            {
+                question: "In welchem Jahr wurde die Schweiz gegründet?",
+                answers: ["1291", "1315", "1499", "1648"],
+                correct: 0
+            },
+            {
+                question: "Wie viele Herzen hat ein Oktopus?",
+                answers: ["1", "2", "3", "4"],
+                correct: 2
+            },
+            {
+                question: "Welches ist der längste Fluss der Welt?",
+                answers: ["Amazonas", "Nil", "Mississippi", "Jangtse"],
+                correct: 1
+            },
+            {
+                question: "Wer entwickelte die Relativitätstheorie?",
+                answers: ["Isaac Newton", "Albert Einstein", "Stephen Hawking", "Niels Bohr"],
+                correct: 1
+            },
+            {
+                question: "Wie viele Knochen hat ein erwachsener Mensch?",
+                answers: ["186", "206", "226", "246"],
+                correct: 1
+            },
+            {
+                question: "In welchem Land steht der Eiffelturm?",
+                answers: ["Italien", "Spanien", "Frankreich", "Deutschland"],
+                correct: 2
+            }
+        ];
+
+        // Gewinnleiter
+        const prizeLevels = [
+            "€ 50", "€ 100", "€ 200", "€ 300", "€ 500",
+            "€ 1.000", "€ 2.000", "€ 4.000", "€ 8.000", "€ 16.000",
+            "€ 32.000", "€ 64.000", "€ 125.000", "€ 500.000", "€ 1.000.000"
+        ];
+
+        // Game State
+        let peer;
+        let hostId;
+        let players = new Map();
+        let currentQuestionIndex = 0;
+        let gameStarted = false;
+        let questionActive = false;
+        let timerInterval;
+        let timeLeft = 30;
+
+        // Initialize PeerJS
+        function initPeer() {
+            peer = new Peer();
+            
+            peer.on('open', function(id) {
+                hostId = id;
+                console.log('Host ID:', id);
+                
+                generateJoinUrl(id);
+            });
+
+            peer.on('connection', function(conn) {
+                console.log('New player connecting...');
+                
+                conn.on('open', function() {
+                    conn.on('data', function(data) {
+                        handlePlayerMessage(conn, data);
+                    });
+                });
+
+                conn.on('close', function() {
+                    removePlayer(conn.peer);
+                });
+            });
+        }
+
+        function generateJoinUrl(id) {
+            const ipInput = document.getElementById('ipInput').value.trim();
+            const protocol = window.location.protocol;
+            const port = window.location.port;
+            
+            console.log('Generating join URL with IP:', ipInput);
+            
+            let baseUrl;
+            if (ipInput && ipInput.length > 0) {
+                // Use custom IP
+                baseUrl = `${protocol}//${ipInput}${port ? ':' + port : ''}`;
+            } else {
+                // Use current hostname
+                baseUrl = window.location.origin;
+            }
+            
+            const joinUrl = `${baseUrl}${window.location.pathname.replace('host.html', 'player.html')}?host=${id}`;
+            console.log('Join URL:', joinUrl);
+            
+            document.getElementById('joinUrl').textContent = joinUrl;
+            
+            // Clear and regenerate QR Code
+            const qrcodeEl = document.getElementById('qrcode');
+            qrcodeEl.innerHTML = ''; // Clear old QR code
+            
+            try {
+                new QRCode(qrcodeEl, {
+                    text: joinUrl,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                console.log('QR Code generated successfully');
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+            }
+        }
+
+        function handlePlayerMessage(conn, data) {
+            console.log('Received from player:', data);
+
+            if (data.type === 'join') {
+                const player = {
+                    id: conn.peer,
+                    name: data.name,
+                    conn: conn,
+                    alive: true,
+                    currentAnswer: null,
+                    jokers: {
+                        fifty: true,
+                        audience: true,
+                        phone: true
+                    },
+                    answered: false
+                };
+                
+                players.set(conn.peer, player);
+                updatePlayerCount();
+                updatePlayersList();
+                
+                // Send confirmation
+                conn.send({
+                    type: 'joined',
+                    success: true
+                });
+            }
+
+            if (data.type === 'answer') {
+                const player = players.get(conn.peer);
+                if (player && player.alive) {
+                    player.currentAnswer = data.answer;
+                    player.jokerUsed = data.joker || null;
+                    player.phoneTarget = data.phoneTarget || null;
+                    player.answered = true;
+                    updatePlayersList();
+                }
+            }
+
+            if (data.type === 'useFiftyFifty') {
+                // Send back 2 wrong answer indices
+                const q = questions[currentQuestionIndex];
+                if (q) {
+                    const correctIndex = q.correct;
+                    const wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIndex);
+                    
+                    // Shuffle and take 2
+                    const shuffled = wrongIndices.sort(() => Math.random() - 0.5);
+                    const toRemove = shuffled.slice(0, 2);
+                    
+                    conn.send({
+                        type: 'fiftyFiftyResponse',
+                        wrongAnswers: toRemove
+                    });
+                }
+            }
+        }
+
+        function removePlayer(playerId) {
+            players.delete(playerId);
+            updatePlayerCount();
+            updatePlayersList();
+        }
+
+        function updatePlayerCount() {
+            const count = players.size;
+            document.getElementById('playerCount').textContent = count;
+            document.getElementById('playerListCount').textContent = count;
+            
+            const alivePlayers = Array.from(players.values()).filter(p => p.alive).length;
+            document.getElementById('activePlayers').textContent = alivePlayers;
+            
+            document.getElementById('startGameBtn').disabled = count === 0;
+        }
+
+        function updatePlayersList() {
+            const listEl = document.getElementById('playersList');
+            listEl.innerHTML = '';
+            
+            players.forEach(player => {
+                const div = document.createElement('div');
+                div.className = 'player-item';
+                if (!player.alive) div.classList.add('dead');
+                if (player.answered) div.classList.add('answered');
+                
+                const statusBadges = [];
+                if (player.alive) {
+                    statusBadges.push('<span class="status-badge alive">✓ Lebt</span>');
+                } else {
+                    statusBadges.push('<span class="status-badge dead">✗ Raus</span>');
+                }
+                
+                if (player.answered && questionActive) {
+                    statusBadges.push('<span class="status-badge answered">Geantwortet</span>');
+                }
+                
+                div.innerHTML = `
+                    <span>${player.name}</span>
+                    <div class="player-status">
+                        ${statusBadges.join('')}
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function broadcastToPlayers(message) {
+            players.forEach(player => {
+                if (player.conn && player.conn.open) {
+                    player.conn.send(message);
+                }
+            });
+        }
+
+        function startGame() {
+            gameStarted = true;
+            currentQuestionIndex = 0;
+            
+            // Reset all players
+            players.forEach(player => {
+                player.alive = true;
+                player.jokers = {
+                    fifty: true,
+                    audience: true,
+                    phone: true
+                };
+            });
+            
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('gameScreen').classList.add('active');
+            
+            broadcastToPlayers({
+                type: 'gameStart',
+                totalQuestions: questions.length
+            });
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentQuestionIndex >= questions.length) {
+                endGame();
+                return;
+            }
+            
+            const q = questions[currentQuestionIndex];
+            questionActive = true;
+            timeLeft = 30;
+            
+            // Reset answer states
+            players.forEach(player => {
+                player.currentAnswer = null;
+                player.jokerUsed = null;
+                player.phoneTarget = null;
+                player.answered = false;
+            });
+            
+            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('questionDisplay').textContent = q.question;
+            
+            const answersEl = document.getElementById('answersDisplay');
+            answersEl.innerHTML = '';
+            q.answers.forEach((answer, idx) => {
+                const div = document.createElement('div');
+                div.className = 'answer-display';
+                div.innerHTML = `
+                    <span class="label">${String.fromCharCode(65 + idx)}:</span>
+                    <span>${answer}</span>
+                `;
+                answersEl.appendChild(div);
+            });
+            
+            document.getElementById('resultsDisplay').style.display = 'none';
+            document.getElementById('revealBtn').disabled = false;
+            document.getElementById('nextBtn').disabled = true;
+            
+            // Broadcast question to players
+            const alivePlayers = Array.from(players.values())
+                .filter(p => p.alive)
+                .map(p => ({ id: p.id, name: p.name }));
+            
+            broadcastToPlayers({
+                type: 'question',
+                questionNumber: currentQuestionIndex + 1,
+                question: q.question,
+                answers: q.answers,
+                prize: prizeLevels[currentQuestionIndex],
+                alivePlayers: alivePlayers
+            });
+            
+            updatePlayersList();
+            startTimer();
+        }
+
+        function startTimer() {
+            const timerEl = document.getElementById('timerDisplay');
+            timerEl.classList.remove('warning');
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                
+                if (timeLeft <= 10) {
+                    timerEl.classList.add('warning');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    questionActive = false;
+                    
+                    // Mark players who didn't answer as dead
+                    players.forEach(player => {
+                        if (player.alive && !player.answered) {
+                            player.alive = false;
+                        }
+                    });
+                    
+                    updatePlayersList();
+                    updatePlayerCount();
+                }
+            }, 1000);
+        }
+
+        function revealAnswer() {
+            clearInterval(timerInterval);
+            questionActive = false;
+            
+            const q = questions[currentQuestionIndex];
+            const correctAnswer = q.correct;
+            
+            // Calculate results
+            const results = [];
+            
+            players.forEach(player => {
+                if (!player.alive) {
+                    results.push({
+                        name: player.name,
+                        status: 'dead',
+                        answer: '-',
+                        correct: false
+                    });
+                    return;
+                }
+                
+                if (!player.answered) {
+                    player.alive = false;
+                    results.push({
+                        name: player.name,
+                        status: 'timeout',
+                        answer: 'Keine Antwort',
+                        correct: false
+                    });
+                    return;
+                }
+                
+                let isCorrect = false;
+                let explanation = '';
+                
+                // Handle different joker scenarios
+                if (player.jokerUsed === 'audience') {
+                    // Audience joker: check majority
+                    const aliveAnswers = Array.from(players.values())
+                        .filter(p => p.alive && p.answered && p.id !== player.id)
+                        .map(p => p.currentAnswer);
+                    
+                    if (aliveAnswers.length > 0) {
+                        const counts = [0, 0, 0, 0];
+                        aliveAnswers.forEach(a => counts[a]++);
+                        const majorityAnswer = counts.indexOf(Math.max(...counts));
+                        
+                        if (majorityAnswer === correctAnswer) {
+                            isCorrect = true;
+                            explanation = '(Publikumsjoker: Mehrheit richtig)';
+                        } else {
+                            isCorrect = player.currentAnswer === correctAnswer;
+                            explanation = '(Publikumsjoker: Eigene Wahl)';
+                        }
+                    } else {
+                        isCorrect = player.currentAnswer === correctAnswer;
+                        explanation = '(Publikumsjoker: Keine anderen Spieler)';
+                    }
+                    
+                } else if (player.jokerUsed === 'phone' && player.phoneTarget) {
+                    // Phone joker: check target's answer
+                    const target = players.get(player.phoneTarget);
+                    if (target && target.alive && target.answered) {
+                        if (target.currentAnswer === correctAnswer) {
+                            isCorrect = true;
+                            explanation = `(Telefonjoker: ${target.name} hatte recht)`;
+                        } else {
+                            isCorrect = player.currentAnswer === correctAnswer;
+                            explanation = `(Telefonjoker: Eigene Wahl)`;
+                        }
+                    } else {
+                        isCorrect = player.currentAnswer === correctAnswer;
+                        explanation = '(Telefonjoker: Target nicht verfügbar)';
+                    }
+                    
+                } else {
+                    // Normal answer or 50:50 joker
+                    isCorrect = player.currentAnswer === correctAnswer;
+                    if (player.jokerUsed === 'fifty') {
+                        explanation = '(50:50 Joker verwendet)';
+                    }
+                }
+                
+                if (!isCorrect) {
+                    player.alive = false;
+                }
+                
+                results.push({
+                    name: player.name,
+                    status: isCorrect ? 'correct' : 'wrong',
+                    answer: String.fromCharCode(65 + player.currentAnswer),
+                    correct: isCorrect,
+                    explanation: explanation
+                });
+            });
+            
+            // Display results
+            displayResults(results, correctAnswer);
+            
+            // Notify players
+            broadcastToPlayers({
+                type: 'reveal',
+                correctAnswer: correctAnswer,
+                results: results
+            });
+            
+            updatePlayersList();
+            updatePlayerCount();
+            
+            document.getElementById('revealBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        function displayResults(results, correctAnswer) {
+            const resultsEl = document.getElementById('resultsDisplay');
+            const listEl = document.getElementById('resultsList');
+            
+            resultsEl.style.display = 'block';
+            listEl.innerHTML = '';
+            
+            const correctAnswerText = String.fromCharCode(65 + correctAnswer);
+            const headerDiv = document.createElement('div');
+            headerDiv.style.cssText = 'text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(76, 175, 80, 0.2); border-radius: 8px;';
+            headerDiv.innerHTML = `<strong style="color: #4caf50; font-size: 20px;">Richtige Antwort: ${correctAnswerText}</strong>`;
+            listEl.appendChild(headerDiv);
+            
+            results.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `result-item ${result.correct ? 'correct' : 'wrong'}`;
+                
+                let statusIcon = '';
+                if (result.status === 'dead') statusIcon = '☠️ Bereits raus';
+                else if (result.status === 'timeout') statusIcon = '⏰ Zeit abgelaufen';
+                else if (result.correct) statusIcon = '✓ Richtig';
+                else statusIcon = '✗ Falsch';
+                
+                div.innerHTML = `
+                    <span><strong>${result.name}</strong> - Antwort: ${result.answer} ${result.explanation || ''}</span>
+                    <span>${statusIcon}</span>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            
+            // Check if there are still players alive
+            const alivePlayers = Array.from(players.values()).filter(p => p.alive).length;
+            
+            if (alivePlayers === 0) {
+                endGame();
+            } else {
+                loadQuestion();
+            }
+        }
+
+        function endGame() {
+            const winners = Array.from(players.values()).filter(p => p.alive);
+            
+            const winnerDiv = document.createElement('div');
+            winnerDiv.className = 'winner-display';
+            
+            if (winners.length > 0) {
+                const prize = prizeLevels[Math.min(currentQuestionIndex, prizeLevels.length - 1)];
+                winnerDiv.innerHTML = `
+                    <h2>🎉 Gewinner! 🎉</h2>
+                    <p style="font-size: 24px; margin: 20px 0;">
+                        ${winners.map(w => w.name).join(', ')}
+                    </p>
+                    <p style="font-size: 32px; font-weight: bold;">Gewinn: ${prize}</p>
+                `;
+            } else {
+                winnerDiv.innerHTML = `
+                    <h2>Spiel beendet</h2>
+                    <p style="font-size: 24px;">Leider hat es niemand bis zum Ende geschafft!</p>
+                `;
+            }
+            
+            document.getElementById('questionDisplay').innerHTML = '';
+            document.getElementById('answersDisplay').innerHTML = '';
+            document.getElementById('questionDisplay').appendChild(winnerDiv);
+            
+            // Show statistics
+            const stats = calculateStats();
+            displayStats(stats);
+            
+            broadcastToPlayers({
+                type: 'gameEnd',
+                winners: winners.map(w => w.name),
+                prize: winners.length > 0 ? prizeLevels[Math.min(currentQuestionIndex, prizeLevels.length - 1)] : null
+            });
+            
+            document.getElementById('revealBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = true;
+        }
+
+        function calculateStats() {
+            return {
+                totalPlayers: players.size,
+                survivors: Array.from(players.values()).filter(p => p.alive).length,
+                questionsAsked: currentQuestionIndex
+            };
+        }
+
+        function displayStats(stats) {
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'stats-display';
+            statsDiv.innerHTML = `
+                <div class="stat-card">
+                    <div class="value">${stats.totalPlayers}</div>
+                    <div class="label">Teilnehmer</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${stats.survivors}</div>
+                    <div class="label">Überlebende</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${stats.questionsAsked}</div>
+                    <div class="label">Fragen gestellt</div>
+                </div>
+            `;
+            
+            document.getElementById('resultsDisplay').appendChild(statsDiv);
+        }
+
+        // Event Listeners
+        document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('revealBtn').addEventListener('click', revealAnswer);
+        document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+        
+        // Update QR Code button
+        document.getElementById('updateQrBtn').addEventListener('click', function() {
+            if (hostId) {
+                console.log('Updating QR code...');
+                generateJoinUrl(hostId);
+            } else {
+                alert('Warte bis PeerJS verbunden ist...');
+            }
+        });
+
+        // Initialize
+        // Pre-fill IP input if we're on localhost
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            // Try to detect the network IP
+            // This is just a hint, user needs to confirm
+            document.getElementById('ipInput').placeholder = 'Gib hier deine IP-Adresse ein (z.B. 192.168.1.145)';
+        } else {
+            // We're already on a network IP, use it!
+            document.getElementById('ipInput').value = window.location.hostname;
+        }
+        
+        initPeer();
+    </script>
+</body>
+</html>

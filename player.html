@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWM Live - Spieler</title>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .join-screen {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .join-screen h2 {
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #3a7bd5;
+            border-radius: 8px;
+            background: rgba(26, 40, 73, 0.8);
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ff9800, #ff6f00);
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+            width: 100%;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .game-screen {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .game-screen.active {
+            display: flex;
+        }
+
+        .status-bar {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .status-bar.dead {
+            background: rgba(139, 0, 0, 0.3);
+            border: 2px solid #f44336;
+        }
+
+        .status-bar.alive {
+            background: rgba(0, 100, 0, 0.3);
+            border: 2px solid #4caf50;
+        }
+
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffd700;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .timer.warning {
+            color: #ff6f00;
+            animation: pulse 1s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .question-box {
+            background: linear-gradient(135deg, #1e3a5f, #2c5282);
+            border-radius: 12px;
+            padding: 20px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 18px;
+            border: 2px solid rgba(58, 123, 213, 0.3);
+        }
+
+        .answers {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .answer-btn {
+            background: linear-gradient(135deg, #1a2849, #243b5e);
+            border: 2px solid #3a7bd5;
+            border-radius: 12px;
+            color: #fff;
+            padding: 15px;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .answer-btn:hover:not(:disabled) {
+            border-color: #5a9bef;
+            box-shadow: 0 5px 20px rgba(58, 123, 213, 0.4);
+        }
+
+        .answer-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .answer-btn.selected {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            border-color: #ffed4e;
+            color: #000;
+            font-weight: bold;
+        }
+
+        .answer-btn.correct {
+            background: linear-gradient(135deg, #4caf50, #66bb6a);
+            border-color: #81c784;
+            color: #fff;
+        }
+
+        .answer-btn.wrong {
+            background: linear-gradient(135deg, #f44336, #e57373);
+            border-color: #ef5350;
+            color: #fff;
+        }
+
+        .answer-btn.disabled-joker {
+            opacity: 0.3;
+            background: #333;
+        }
+
+        .answer-label {
+            font-weight: bold;
+            margin-right: 8px;
+            display: inline-block;
+            min-width: 25px;
+        }
+
+        .jokers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .joker-btn {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+            border: none;
+            padding: 12px 8px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+
+        .joker-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(142, 68, 173, 0.4);
+        }
+
+        .joker-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .joker-btn.active {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+        }
+
+        .ladder {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ladder h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .ladder-item {
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 6px;
+            background: rgba(26, 40, 73, 0.6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .ladder-item.current {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .ladder-item.completed {
+            background: rgba(76, 175, 80, 0.3);
+            border-left: 3px solid #4caf50;
+        }
+
+        .phone-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .phone-modal.active {
+            display: flex;
+        }
+
+        .phone-modal-content {
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .phone-modal h3 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .player-select {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .player-select-item {
+            background: rgba(26, 40, 73, 0.8);
+            padding: 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .player-select-item:hover {
+            border-color: #3a7bd5;
+            background: rgba(58, 123, 213, 0.3);
+        }
+
+        .player-select-item.selected {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .waiting-screen {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            margin-top: 50px;
+        }
+
+        .waiting-screen h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .called-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #ff9800, #ff6f00);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.5);
+            animation: blink 1s ease infinite;
+            z-index: 999;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .result-screen {
+            text-align: center;
+            padding: 30px;
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+        }
+
+        .result-screen h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .result-screen.winner {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(102, 187, 106, 0.3));
+            border: 3px solid #4caf50;
+        }
+
+        .result-screen.loser {
+            background: rgba(139, 0, 0, 0.3);
+            border: 3px solid #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Wer wird Millionär - LIVE</h1>
+        
+        <!-- Join Screen -->
+        <div id="joinScreen" class="join-screen">
+            <h2>Willkommen!</h2>
+            <p style="margin-bottom: 20px;">Gib deinen Namen ein um mitzuspielen:</p>
+            <input type="text" id="playerName" placeholder="Dein Name" maxlength="20">
+            <button class="btn" id="joinBtn">Beitreten</button>
+            <p id="joinStatus" style="margin-top: 15px; color: #ff6f00;"></p>
+        </div>
+
+        <!-- Waiting Screen -->
+        <div id="waitingScreen" class="waiting-screen" style="display: none;">
+            <h2>✓ Verbunden!</h2>
+            <p style="font-size: 18px; margin: 20px 0;">Warte auf Spielstart...</p>
+            <div style="font-size: 14px; color: #a0c4ff; margin-top: 30px;">
+                <p>Joker verfügbar:</p>
+                <p>🎯 50:50</p>
+                <p>👥 Publikumsjoker</p>
+                <p>📞 Telefonjoker</p>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="game-screen">
+            <div class="status-bar alive" id="statusBar">
+                <div style="font-size: 14px;">Frage <span id="questionNumber">1</span> von 15</div>
+                <div style="font-size: 18px; font-weight: bold; margin: 5px 0;">
+                    <span id="prizeDisplay">€ 50</span>
+                </div>
+                <div id="statusText" style="font-size: 14px; color: #4caf50;">✓ Du bist noch dabei!</div>
+            </div>
+
+            <div id="calledIndicator" class="called-indicator" style="display: none;">
+                📞 Du wurdest angerufen!
+            </div>
+
+            <div class="timer" id="timer">30</div>
+
+            <div class="question-box" id="questionBox">
+                Warte auf Frage...
+            </div>
+
+            <div class="jokers" id="jokersPanel">
+                <button class="joker-btn" id="fiftyBtn" data-joker="fifty">
+                    🎯 50:50
+                </button>
+                <button class="joker-btn" id="audienceBtn" data-joker="audience">
+                    👥 Publikum
+                </button>
+                <button class="joker-btn" id="phoneBtn" data-joker="phone">
+                    📞 Telefon
+                </button>
+            </div>
+
+            <div class="answers" id="answersPanel">
+                <!-- Answers will be populated here -->
+            </div>
+
+            <div class="ladder" id="ladderPanel">
+                <h3>Gewinnleiter</h3>
+                <div id="ladderList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Joker Modal -->
+    <div id="phoneModal" class="phone-modal">
+        <div class="phone-modal-content">
+            <h3>📞 Wen möchtest du anrufen?</h3>
+            <div class="player-select" id="playerSelect">
+                <!-- Players will be listed here -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" id="confirmPhoneBtn" disabled>Anrufen</button>
+                <button class="btn" id="cancelPhoneBtn" style="background: #666;">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const prizeLevels = [
+            "€ 50", "€ 100", "€ 200", "€ 300", "€ 500",
+            "€ 1.000", "€ 2.000", "€ 4.000", "€ 8.000", "€ 16.000",
+            "€ 32.000", "€ 64.000", "€ 125.000", "€ 500.000", "€ 1.000.000"
+        ];
+
+        let peer;
+        let hostConnection;
+        let playerName = '';
+        let isAlive = true;
+        let currentQuestion = null;
+        let selectedAnswer = null;
+        let activeJoker = null;
+        let phoneTarget = null;
+        let jokers = {
+            fifty: true,
+            audience: true,
+            phone: true
+        };
+        let questionActive = false;
+        let fiftyFiftyUsed = false;
+
+        // Get host ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const hostId = urlParams.get('host');
+
+        if (!hostId) {
+            alert('Fehler: Keine Host-ID gefunden. Bitte scanne den QR-Code erneut.');
+        }
+
+        function initPeer() {
+            peer = new Peer();
+
+            peer.on('open', function(id) {
+                console.log('Player ID:', id);
+            });
+        }
+
+        function connectToHost() {
+            hostConnection = peer.connect(hostId);
+
+            hostConnection.on('open', function() {
+                console.log('Connected to host');
+                
+                hostConnection.send({
+                    type: 'join',
+                    name: playerName
+                });
+            });
+
+            hostConnection.on('data', function(data) {
+                handleHostMessage(data);
+            });
+
+            hostConnection.on('close', function() {
+                alert('Verbindung zum Host verloren!');
+            });
+
+            hostConnection.on('error', function(err) {
+                console.error('Connection error:', err);
+                document.getElementById('joinStatus').textContent = 'Verbindung fehlgeschlagen. Bitte erneut versuchen.';
+            });
+        }
+
+        function handleHostMessage(data) {
+            console.log('Received from host:', data);
+
+            if (data.type === 'joined') {
+                document.getElementById('joinScreen').style.display = 'none';
+                document.getElementById('waitingScreen').style.display = 'block';
+            }
+
+            if (data.type === 'gameStart') {
+                document.getElementById('waitingScreen').style.display = 'none';
+                document.getElementById('gameScreen').classList.add('active');
+                buildLadder();
+            }
+
+            if (data.type === 'question') {
+                loadQuestion(data);
+            }
+
+            if (data.type === 'reveal') {
+                revealAnswer(data);
+            }
+
+            if (data.type === 'gameEnd') {
+                showGameEnd(data);
+            }
+
+            if (data.type === 'fiftyFiftyResponse') {
+                // Remove the wrong answers
+                const wrongIndices = data.wrongAnswers;
+                const buttons = document.querySelectorAll('.answer-btn');
+                wrongIndices.forEach(idx => {
+                    buttons[idx].disabled = true;
+                    buttons[idx].classList.add('disabled-joker');
+                });
+            }
+        }
+
+        function buildLadder() {
+            const ladderEl = document.getElementById('ladderList');
+            ladderEl.innerHTML = '';
+            
+            prizeLevels.forEach((prize, idx) => {
+                const div = document.createElement('div');
+                div.className = 'ladder-item';
+                div.dataset.level = idx;
+                div.innerHTML = `
+                    <span>${idx + 1}</span>
+                    <span>${prize}</span>
+                `;
+                ladderEl.insertBefore(div, ladderEl.firstChild);
+            });
+        }
+
+        function updateLadder(level) {
+            const items = document.querySelectorAll('.ladder-item');
+            items.forEach((item, idx) => {
+                const itemLevel = parseInt(item.dataset.level);
+                item.classList.remove('current', 'completed');
+                
+                if (itemLevel === level) {
+                    item.classList.add('current');
+                } else if (itemLevel < level) {
+                    item.classList.add('completed');
+                }
+            });
+        }
+
+        function loadQuestion(data) {
+            currentQuestion = data;
+            selectedAnswer = null;
+            activeJoker = null;
+            phoneTarget = null;
+            questionActive = true;
+            fiftyFiftyUsed = false;
+
+            document.getElementById('questionNumber').textContent = data.questionNumber;
+            document.getElementById('prizeDisplay').textContent = data.prize;
+            document.getElementById('questionBox').textContent = data.question;
+
+            updateLadder(data.questionNumber - 1);
+
+            // Reset answer buttons
+            const answersEl = document.getElementById('answersPanel');
+            answersEl.innerHTML = '';
+            
+            data.answers.forEach((answer, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.dataset.index = idx;
+                btn.innerHTML = `
+                    <span class="answer-label">${String.fromCharCode(65 + idx)}:</span>
+                    ${answer}
+                `;
+                btn.addEventListener('click', () => selectAnswer(idx, btn));
+                answersEl.appendChild(btn);
+            });
+
+            // Reset jokers active state
+            document.querySelectorAll('.joker-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Update joker availability
+            updateJokersUI();
+
+            // Reset called indicator
+            document.getElementById('calledIndicator').style.display = 'none';
+
+            startTimer();
+        }
+
+        function updateJokersUI() {
+            document.getElementById('fiftyBtn').disabled = !jokers.fifty || !isAlive;
+            document.getElementById('audienceBtn').disabled = !jokers.audience || !isAlive;
+            document.getElementById('phoneBtn').disabled = !jokers.phone || !isAlive;
+        }
+
+        function startTimer() {
+            let timeLeft = 30;
+            const timerEl = document.getElementById('timer');
+            timerEl.classList.remove('warning');
+            timerEl.textContent = timeLeft;
+
+            const interval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+
+                if (timeLeft <= 10) {
+                    timerEl.classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    questionActive = false;
+                    
+                    // Disable all buttons
+                    document.querySelectorAll('.answer-btn').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                }
+            }, 1000);
+        }
+
+        function selectAnswer(index, btn) {
+            if (!questionActive || !isAlive) return;
+
+            // Remove previous selection
+            document.querySelectorAll('.answer-btn').forEach(b => {
+                b.classList.remove('selected');
+            });
+
+            selectedAnswer = index;
+            btn.classList.add('selected');
+
+            // Send answer to host
+            sendAnswer();
+        }
+
+        function useFiftyFifty() {
+            if (!jokers.fifty || !questionActive || !isAlive || fiftyFiftyUsed) return;
+
+            jokers.fifty = false;
+            fiftyFiftyUsed = true;
+            activeJoker = 'fifty';
+            
+            document.getElementById('fiftyBtn').disabled = true;
+            document.getElementById('fiftyBtn').classList.add('active');
+
+            // Request 50:50 help from host
+            if (hostConnection && hostConnection.open) {
+                hostConnection.send({
+                    type: 'useFiftyFifty'
+                });
+            }
+        }
+
+        function useAudienceJoker() {
+            if (!jokers.audience || !questionActive || !isAlive) return;
+
+            jokers.audience = false;
+            activeJoker = 'audience';
+            
+            document.getElementById('audienceBtn').disabled = true;
+            document.getElementById('audienceBtn').classList.add('active');
+
+            // Show non-blocking message
+            const statusText = document.getElementById('statusText');
+            const originalText = statusText.textContent;
+            statusText.textContent = '👥 Publikumsjoker aktiv! Wähle deine Antwort!';
+            statusText.style.color = '#ffd700';
+            
+            setTimeout(() => {
+                statusText.textContent = originalText;
+                statusText.style.color = '';
+            }, 3000);
+        }
+
+        function usePhoneJoker() {
+            if (!jokers.phone || !questionActive || !isAlive) return;
+
+            // Show player selection modal
+            const playerSelect = document.getElementById('playerSelect');
+            playerSelect.innerHTML = '';
+
+            if (!currentQuestion.alivePlayers || currentQuestion.alivePlayers.length === 0) {
+                alert('Keine anderen Spieler verfügbar!');
+                return;
+            }
+
+            currentQuestion.alivePlayers.forEach(player => {
+                if (player.id !== peer.id) {  // Don't show yourself
+                    const div = document.createElement('div');
+                    div.className = 'player-select-item';
+                    div.textContent = player.name;
+                    div.addEventListener('click', () => {
+                        document.querySelectorAll('.player-select-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        div.classList.add('selected');
+                        phoneTarget = player.id;
+                        document.getElementById('confirmPhoneBtn').disabled = false;
+                    });
+                    playerSelect.appendChild(div);
+                }
+            });
+
+            document.getElementById('phoneModal').classList.add('active');
+        }
+
+        function confirmPhoneJoker() {
+            if (!phoneTarget) return;
+
+            jokers.phone = false;
+            activeJoker = 'phone';
+            
+            document.getElementById('phoneBtn').disabled = true;
+            document.getElementById('phoneBtn').classList.add('active');
+            document.getElementById('phoneModal').classList.remove('active');
+
+            // Show non-blocking message
+            const statusText = document.getElementById('statusText');
+            const originalText = statusText.textContent;
+            statusText.textContent = '📞 Telefonjoker aktiv! Wähle deine Antwort!';
+            statusText.style.color = '#ffd700';
+            
+            setTimeout(() => {
+                statusText.textContent = originalText;
+                statusText.style.color = '';
+            }, 3000);
+        }
+
+        function sendAnswer() {
+            if (selectedAnswer === null || !isAlive) return;
+
+            hostConnection.send({
+                type: 'answer',
+                answer: selectedAnswer,
+                joker: activeJoker,
+                phoneTarget: phoneTarget
+            });
+        }
+
+        function revealAnswer(data) {
+            questionActive = false;
+            
+            const correctAnswer = data.correctAnswer;
+            const buttons = document.querySelectorAll('.answer-btn');
+            
+            // Show correct answer
+            buttons[correctAnswer].classList.add('correct');
+            
+            // Show wrong answer if selected
+            if (selectedAnswer !== null && selectedAnswer !== correctAnswer) {
+                buttons[selectedAnswer].classList.add('wrong');
+            }
+
+            // Check own result
+            const ownResult = data.results.find(r => r.name === playerName);
+            
+            if (ownResult) {
+                const statusBar = document.getElementById('statusBar');
+                const statusText = document.getElementById('statusText');
+                
+                if (ownResult.correct) {
+                    statusBar.classList.remove('dead');
+                    statusBar.classList.add('alive');
+                    statusText.textContent = '✓ Richtig! Du bist weiter dabei!';
+                    statusText.style.color = '#4caf50';
+                } else {
+                    isAlive = false;
+                    statusBar.classList.remove('alive');
+                    statusBar.classList.add('dead');
+                    statusText.textContent = '✗ Leider falsch. Du spielst jetzt im roten Modus weiter.';
+                    statusText.style.color = '#f44336';
+                    
+                    // Disable jokers
+                    document.querySelectorAll('.joker-btn').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                }
+            }
+
+            // Check if we were called by someone (for display purposes)
+            data.results.forEach(result => {
+                if (result.explanation && result.explanation.includes(playerName)) {
+                    document.getElementById('calledIndicator').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('calledIndicator').style.display = 'none';
+                    }, 5000);
+                }
+            });
+        }
+
+        function showGameEnd(data) {
+            const gameScreen = document.getElementById('gameScreen');
+            gameScreen.innerHTML = '';
+            
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result-screen';
+            
+            if (data.winners && data.winners.includes(playerName)) {
+                resultDiv.classList.add('winner');
+                resultDiv.innerHTML = `
+                    <h2>🎉 GEWONNEN! 🎉</h2>
+                    <p style="font-size: 24px; margin: 20px 0;">Du hast gewonnen!</p>
+                    <p style="font-size: 32px; font-weight: bold; color: #ffd700;">${data.prize}</p>
+                `;
+            } else {
+                resultDiv.classList.add('loser');
+                resultDiv.innerHTML = `
+                    <h2>Spiel beendet</h2>
+                    <p style="font-size: 20px; margin: 20px 0;">
+                        ${isAlive ? 'Das Spiel ist zu Ende.' : 'Du bist in Frage ' + (currentQuestion.questionNumber) + ' ausgeschieden.'}
+                    </p>
+                    ${data.winners && data.winners.length > 0 ? 
+                        `<p style="margin-top: 20px;">Gewinner: ${data.winners.join(', ')}</p>` : 
+                        '<p style="margin-top: 20px;">Niemand hat gewonnen!</p>'}
+                `;
+            }
+            
+            gameScreen.appendChild(resultDiv);
+        }
+
+        // Event Listeners
+        document.getElementById('joinBtn').addEventListener('click', function() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            
+            if (name.length < 2) {
+                document.getElementById('joinStatus').textContent = 'Bitte gib einen gültigen Namen ein!';
+                return;
+            }
+            
+            playerName = name;
+            document.getElementById('joinStatus').textContent = 'Verbinde...';
+            
+            initPeer();
+            
+            // Wait for peer to initialize
+            setTimeout(() => {
+                connectToHost();
+            }, 1000);
+        });
+
+        document.getElementById('fiftyBtn').addEventListener('click', useFiftyFifty);
+        document.getElementById('audienceBtn').addEventListener('click', useAudienceJoker);
+        document.getElementById('phoneBtn').addEventListener('click', usePhoneJoker);
+
+        document.getElementById('confirmPhoneBtn').addEventListener('click', confirmPhoneJoker);
+        document.getElementById('cancelPhoneBtn').addEventListener('click', function() {
+            document.getElementById('phoneModal').classList.remove('active');
+            phoneTarget = null;
+            document.getElementById('confirmPhoneBtn').disabled = true;
+        });
+
+        // Auto-focus name input
+        document.getElementById('playerName').focus();
+
+        // Warn before page reload/close during game
+        window.addEventListener('beforeunload', function(e) {
+            if (questionActive && isAlive) {
+                e.preventDefault();
+                e.returnValue = 'Wenn du die Seite neu lädst, fliegst du aus dem Spiel raus!';
+                return e.returnValue;
+            }
+        });
+    </script>
+</body>
+</html>

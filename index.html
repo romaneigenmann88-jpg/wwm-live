@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWM Live - Multiplayer Quiz</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px 20px;
+        }
+        h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            font-size: 18px;
+            color: #8892b0;
+            margin-bottom: 50px;
+        }
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+        a {
+            display: inline-block;
+            width: 280px;
+            padding: 18px 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 20px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        a:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        }
+        .btn-host {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #1a1f3a;
+        }
+        .btn-player {
+            background: linear-gradient(135deg, #00b4d8, #0077b6);
+            color: #fff;
+        }
+        .btn-demo {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: #fff;
+            font-size: 16px;
+            padding: 14px 30px;
+        }
+        .footer {
+            margin-top: 60px;
+            color: #555;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WWM Live</h1>
+        <p class="subtitle">Live-Multiplayer Quiz-Spiel</p>
+        <div class="buttons">
+            <a href="host.html" class="btn-host">Spiel erstellen (Host)</a>
+            <a href="player.html" class="btn-player">Spiel beitreten (Player)</a>
+            <a href="DEMO.html" class="btn-demo">Demo & Anleitung</a>
+        </div>
+        <p class="footer">Peer-to-Peer &middot; Kein Server n&ouml;tig &middot; Bis zu 100 Spieler</p>
+    </div>
+</body>
+</html>
