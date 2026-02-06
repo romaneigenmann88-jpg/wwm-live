@@ -582,6 +582,7 @@
                 if (player && player.alive) {
                     player.currentAnswer = data.answer;
                     player.jokerUsed = data.joker || null;
+                    player.jokersUsed = data.jokers || [];
                     player.phoneTarget = data.phoneTarget || null;
                     player.answered = true;
                     updatePlayersList();
@@ -775,7 +776,10 @@
         function revealAnswer() {
             clearInterval(timerInterval);
             questionActive = false;
-            
+
+            // Timer bei allen Spielern stoppen
+            broadcastToPlayers({ type: 'timerStop' });
+
             const q = questions[currentQuestionIndex];
             const correctAnswer = q.correct;
             
@@ -807,31 +811,42 @@
                 let isCorrect = false;
                 let explanation = '';
                 
+                // Check if audience joker was used (support both single and array format)
+                const usedJokers = player.jokersUsed || (player.jokerUsed ? [player.jokerUsed] : []);
+                const usedAudience = usedJokers.includes('audience');
+                const usedPhone = usedJokers.includes('phone');
+                const usedFifty = usedJokers.includes('fifty');
+
                 // Handle different joker scenarios
-                if (player.jokerUsed === 'audience') {
-                    // Audience joker: check majority
+                if (usedAudience) {
+                    // Publikumsjoker: Richtig wenn eigene Antwort ODER Mehrheit korrekt
+                    const ownCorrect = player.currentAnswer === correctAnswer;
+
                     const aliveAnswers = Array.from(players.values())
                         .filter(p => p.alive && p.answered && p.id !== player.id)
                         .map(p => p.currentAnswer);
-                    
+
+                    let majorityCorrect = false;
                     if (aliveAnswers.length > 0) {
                         const counts = [0, 0, 0, 0];
                         aliveAnswers.forEach(a => counts[a]++);
                         const majorityAnswer = counts.indexOf(Math.max(...counts));
-                        
-                        if (majorityAnswer === correctAnswer) {
-                            isCorrect = true;
-                            explanation = '(Publikumsjoker: Mehrheit richtig)';
-                        } else {
-                            isCorrect = player.currentAnswer === correctAnswer;
-                            explanation = '(Publikumsjoker: Eigene Wahl)';
-                        }
+                        majorityCorrect = majorityAnswer === correctAnswer;
+                    }
+
+                    isCorrect = ownCorrect || majorityCorrect;
+
+                    if (ownCorrect && majorityCorrect) {
+                        explanation = '(Publikumsjoker: Eigene Antwort & Mehrheit richtig)';
+                    } else if (ownCorrect) {
+                        explanation = '(Publikumsjoker: Eigene Antwort richtig)';
+                    } else if (majorityCorrect) {
+                        explanation = '(Publikumsjoker: Mehrheit hat dich gerettet!)';
                     } else {
-                        isCorrect = player.currentAnswer === correctAnswer;
-                        explanation = '(Publikumsjoker: Keine anderen Spieler)';
+                        explanation = '(Publikumsjoker: Eigene Antwort & Mehrheit falsch)';
                     }
                     
-                } else if (player.jokerUsed === 'phone' && player.phoneTarget) {
+                } else if (usedPhone && player.phoneTarget) {
                     // Phone joker: check target's answer
                     const target = players.get(player.phoneTarget);
                     if (target && target.alive && target.answered) {
@@ -844,13 +859,13 @@
                         }
                     } else {
                         isCorrect = player.currentAnswer === correctAnswer;
-                        explanation = '(Telefonjoker: Target nicht verfügbar)';
+                        explanation = '(Telefonjoker: Ziel nicht verfügbar)';
                     }
-                    
+
                 } else {
                     // Normal answer or 50:50 joker
                     isCorrect = player.currentAnswer === correctAnswer;
-                    if (player.jokerUsed === 'fifty') {
+                    if (usedFifty) {
                         explanation = '(50:50 Joker verwendet)';
                     }
                 }

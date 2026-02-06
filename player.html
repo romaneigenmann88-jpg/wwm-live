@@ -567,6 +567,10 @@
                 loadQuestion(data);
             }
 
+            if (data.type === 'timerStop') {
+                stopTimer();
+            }
+
             if (data.type === 'reveal') {
                 revealAnswer(data);
             }
@@ -666,13 +670,20 @@
             document.getElementById('phoneBtn').disabled = !jokers.phone || !isAlive;
         }
 
+        let playerTimerInterval = null;
+
         function startTimer() {
+            // Alten Timer stoppen falls noch aktiv
+            if (playerTimerInterval) {
+                clearInterval(playerTimerInterval);
+            }
+
             let timeLeft = 30;
             const timerEl = document.getElementById('timer');
             timerEl.classList.remove('warning');
             timerEl.textContent = timeLeft;
 
-            const interval = setInterval(() => {
+            playerTimerInterval = setInterval(() => {
                 timeLeft--;
                 timerEl.textContent = timeLeft;
 
@@ -681,15 +692,26 @@
                 }
 
                 if (timeLeft <= 0) {
-                    clearInterval(interval);
+                    clearInterval(playerTimerInterval);
+                    playerTimerInterval = null;
                     questionActive = false;
-                    
+
                     // Disable all buttons
                     document.querySelectorAll('.answer-btn').forEach(btn => {
                         btn.disabled = true;
                     });
                 }
             }, 1000);
+        }
+
+        function stopTimer() {
+            if (playerTimerInterval) {
+                clearInterval(playerTimerInterval);
+                playerTimerInterval = null;
+            }
+            const timerEl = document.getElementById('timer');
+            timerEl.classList.remove('warning');
+            timerEl.textContent = '—';
         }
 
         function selectAnswer(index, btn) {
@@ -734,16 +756,10 @@
             document.getElementById('audienceBtn').disabled = true;
             document.getElementById('audienceBtn').classList.add('active');
 
-            // Show non-blocking message
+            // Show persistent message until answer is selected
             const statusText = document.getElementById('statusText');
-            const originalText = statusText.textContent;
-            statusText.textContent = '👥 Publikumsjoker aktiv! Wähle deine Antwort!';
+            statusText.textContent = '👥 Publikumsjoker aktiv! Wähle trotzdem eine Antwort — du bist sicher wenn DEINE Antwort ODER die Mehrheit richtig ist!';
             statusText.style.color = '#ffd700';
-            
-            setTimeout(() => {
-                statusText.textContent = originalText;
-                statusText.style.color = '';
-            }, 3000);
         }
 
         function usePhoneJoker() {
@@ -814,7 +830,8 @@
 
         function revealAnswer(data) {
             questionActive = false;
-            
+            stopTimer();
+
             const correctAnswer = data.correctAnswer;
             const buttons = document.querySelectorAll('.answer-btn');
             
