@@ -531,6 +531,9 @@
                     correctLevel: QRCode.CorrectLevel.H
                 });
             } catch (e) { console.error('QR error:', e); }
+
+            // Send join URL to display for beamer
+            sendToDisplay({ type: 'joinUrl', url: joinUrl });
         }
 
         // ===== PLAYER MANAGEMENT =====
@@ -845,9 +848,7 @@
 
         function nextQuestion() {
             currentQuestionIndex++;
-            const alive = Array.from(players.values()).filter(p => p.alive).length;
-            if (alive === 0) endGame();
-            else loadQuestion();
+            loadQuestion();
         }
 
         function endGame() {
