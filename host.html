@@ -322,63 +322,6 @@
             color: #a0c4ff;
         }
 
-        .ip-input-container {
-            background: rgba(255, 152, 0, 0.1);
-            border: 2px solid #ff9800;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-        }
-
-        .ip-input-container h3 {
-            color: #ff9800;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .ip-input-container input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border: 2px solid #3a7bd5;
-            border-radius: 8px;
-            background: rgba(26, 40, 73, 0.8);
-            color: #fff;
-            margin: 10px 0;
-        }
-
-        .ip-input-container small {
-            color: #a0c4ff;
-            font-size: 13px;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .ip-hint {
-            background: rgba(26, 40, 73, 0.6);
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-top: 10px;
-        }
-
-        .update-btn {
-            background: linear-gradient(135deg, #4caf50, #66bb6a);
-            border: none;
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
-            color: #fff;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        .update-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-        }
     </style>
 </head>
 <body>
@@ -388,17 +331,6 @@
         <!-- Setup Screen -->
         <div id="setupScreen" class="setup-screen">
             <h2>Spiel einrichten</h2>
-            
-            <div class="ip-input-container">
-                <h3>📡 Deine IP-Adresse</h3>
-                <input type="text" id="ipInput" placeholder="z.B. 192.168.1.145" value="">
-                <button class="update-btn" id="updateQrBtn">🔄 QR-Code aktualisieren</button>
-                <small>Windows: <code>ipconfig</code> | Mac/Linux: <code>ifconfig</code></small>
-                <div class="ip-hint">
-                    💡 Suche nach "IPv4" oder Adresse im Format 192.168.x.x<br>
-                    Dann hier eingeben und auf "QR-Code aktualisieren" klicken!
-                </div>
-            </div>
 
             <p>Warte auf Spieler...</p>
             <div id="qrcode"></div>
@@ -592,22 +524,7 @@
         }
 
         function generateJoinUrl(id) {
-            const ipInput = document.getElementById('ipInput').value.trim();
-            const protocol = window.location.protocol;
-            const port = window.location.port;
-            
-            console.log('Generating join URL with IP:', ipInput);
-            
-            let baseUrl;
-            if (ipInput && ipInput.length > 0) {
-                // Use custom IP
-                baseUrl = `${protocol}//${ipInput}${port ? ':' + port : ''}`;
-            } else {
-                // Use current hostname
-                baseUrl = window.location.origin;
-            }
-            
-            const joinUrl = `${baseUrl}${window.location.pathname.replace('host.html', 'player.html')}?host=${id}`;
+            const joinUrl = `${window.location.origin}${window.location.pathname.replace('host.html', 'player.html')}?host=${id}`;
             console.log('Join URL:', joinUrl);
             
             document.getElementById('joinUrl').textContent = joinUrl;
@@ -1086,27 +1003,7 @@
         document.getElementById('revealBtn').addEventListener('click', revealAnswer);
         document.getElementById('nextBtn').addEventListener('click', nextQuestion);
         
-        // Update QR Code button
-        document.getElementById('updateQrBtn').addEventListener('click', function() {
-            if (hostId) {
-                console.log('Updating QR code...');
-                generateJoinUrl(hostId);
-            } else {
-                alert('Warte bis PeerJS verbunden ist...');
-            }
-        });
-
         // Initialize
-        // Pre-fill IP input if we're on localhost
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            // Try to detect the network IP
-            // This is just a hint, user needs to confirm
-            document.getElementById('ipInput').placeholder = 'Gib hier deine IP-Adresse ein (z.B. 192.168.1.145)';
-        } else {
-            // We're already on a network IP, use it!
-            document.getElementById('ipInput').value = window.location.hostname;
-        }
-        
         initPeer();
     </script>
 </body>

@@ -493,7 +493,7 @@
         let isAlive = true;
         let currentQuestion = null;
         let selectedAnswer = null;
-        let activeJoker = null;
+        let activeJokers = [];
         let phoneTarget = null;
         let jokers = {
             fifty: true,
@@ -508,7 +508,11 @@
         const hostId = urlParams.get('host');
 
         if (!hostId) {
-            alert('Fehler: Keine Host-ID gefunden. Bitte scanne den QR-Code erneut.');
+            document.getElementById('joinScreen').innerHTML = `
+                <h2>Kein Spiel gefunden</h2>
+                <p style="margin: 20px 0;">Bitte scanne den QR-Code des Hosts oder verwende den Einladungslink.</p>
+                <a href="host.html" style="color: #ffd700;">Eigenes Spiel erstellen →</a>
+            `;
         }
 
         function initPeer() {
@@ -615,7 +619,7 @@
         function loadQuestion(data) {
             currentQuestion = data;
             selectedAnswer = null;
-            activeJoker = null;
+            activeJokers = [];
             phoneTarget = null;
             questionActive = true;
             fiftyFiftyUsed = false;
@@ -708,7 +712,7 @@
 
             jokers.fifty = false;
             fiftyFiftyUsed = true;
-            activeJoker = 'fifty';
+            activeJokers.push('fifty');
             
             document.getElementById('fiftyBtn').disabled = true;
             document.getElementById('fiftyBtn').classList.add('active');
@@ -725,7 +729,7 @@
             if (!jokers.audience || !questionActive || !isAlive) return;
 
             jokers.audience = false;
-            activeJoker = 'audience';
+            activeJokers.push('audience');
             
             document.getElementById('audienceBtn').disabled = true;
             document.getElementById('audienceBtn').classList.add('active');
@@ -778,7 +782,7 @@
             if (!phoneTarget) return;
 
             jokers.phone = false;
-            activeJoker = 'phone';
+            activeJokers.push('phone');
             
             document.getElementById('phoneBtn').disabled = true;
             document.getElementById('phoneBtn').classList.add('active');
@@ -802,7 +806,8 @@
             hostConnection.send({
                 type: 'answer',
                 answer: selectedAnswer,
-                joker: activeJoker,
+                joker: activeJokers.length > 0 ? activeJokers[activeJokers.length - 1] : null,
+                jokers: activeJokers,
                 phoneTarget: phoneTarget
             });
         }
