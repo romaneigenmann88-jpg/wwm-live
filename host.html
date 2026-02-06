@@ -553,11 +553,13 @@
 
             if (data.type === 'answer') {
                 const player = players.get(conn.peer);
-                if (player && player.alive) {
+                if (player) {
                     player.currentAnswer = data.answer;
-                    player.jokerUsed = data.joker || null;
-                    player.jokersUsed = data.jokers || [];
-                    player.phoneTarget = data.phoneTarget || null;
+                    if (player.alive) {
+                        player.jokerUsed = data.joker || null;
+                        player.jokersUsed = data.jokers || [];
+                        player.phoneTarget = data.phoneTarget || null;
+                    }
                     player.answered = true;
                     updatePlayersList();
                 }
@@ -729,11 +731,8 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    questionActive = false;
-                    players.forEach(player => {
-                        if (player.alive && !player.answered) player.alive = false;
-                    });
-                    updateUI();
+                    // Auto-reveal when timer expires
+                    revealAnswer();
                 }
             }, 1000);
         }

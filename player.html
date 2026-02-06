@@ -242,41 +242,60 @@
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
         }
 
-        .ladder {
+
+        /* --- Personal Ladder --- */
+        .my-ladder {
             background: rgba(10, 20, 40, 0.95);
             border-radius: 12px;
-            padding: 15px;
-            max-height: 300px;
-            overflow-y: auto;
+            padding: 12px;
+            margin-top: 10px;
         }
-
-        .ladder h3 {
+        .my-ladder h3 {
             color: #ffd700;
-            margin-bottom: 10px;
-            font-size: 16px;
+            font-size: 14px;
             text-align: center;
+            margin-bottom: 8px;
         }
-
-        .ladder-item {
-            padding: 8px;
-            margin: 4px 0;
-            border-radius: 6px;
-            background: rgba(26, 40, 73, 0.6);
+        .my-ladder-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 14px;
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 6px;
+            font-size: 13px;
+            background: rgba(26, 40, 73, 0.4);
+            border-left: 3px solid #333;
         }
-
-        .ladder-item.current {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            color: #000;
-            font-weight: bold;
-        }
-
-        .ladder-item.completed {
-            background: rgba(76, 175, 80, 0.3);
+        .my-ladder-item.my-correct {
+            background: rgba(76, 175, 80, 0.25);
             border-left: 3px solid #4caf50;
+        }
+        .my-ladder-item.my-wrong {
+            background: rgba(244, 67, 54, 0.2);
+            border-left: 3px solid #f44336;
+        }
+        .my-ladder-item.my-current {
+            background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,237,78,0.2));
+            border-left: 3px solid #ffd700;
+        }
+        .my-ladder-item.my-pending {
+            opacity: 0.4;
+        }
+        .my-ladder-item .ml-num { min-width: 22px; font-weight: bold; }
+        .my-ladder-item .ml-prize { color: #ffd700; }
+        .my-ladder-item .ml-icon { font-size: 14px; }
+        .my-ladder-summary {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #a0c4ff;
+        }
+        .my-ladder-summary .total-prize {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-top: 4px;
         }
 
         .phone-modal {
@@ -459,6 +478,12 @@
                 <!-- Answers will be populated here -->
             </div>
 
+            <div class="my-ladder" id="myLadderPanel">
+                <h3>Deine Geldtreppe</h3>
+                <div id="myLadderList"></div>
+                <div class="my-ladder-summary" id="myLadderSummary"></div>
+            </div>
+
         </div>
     </div>
 
@@ -498,6 +523,9 @@
         };
         let questionActive = false;
         let fiftyFiftyUsed = false;
+
+        // Personal tracking
+        let myResults = []; // {questionNum, correct, answer, correctAnswer}
 
         // Get host ID from URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -556,7 +584,7 @@
             if (data.type === 'gameStart') {
                 document.getElementById('waitingScreen').style.display = 'none';
                 document.getElementById('gameScreen').classList.add('active');
-                buildLadder();
+                buildMyLadder();
             }
 
             if (data.type === 'question') {
@@ -586,35 +614,7 @@
             }
         }
 
-        function buildLadder() {
-            const ladderEl = document.getElementById('ladderList');
-            ladderEl.innerHTML = '';
-            
-            prizeLevels.forEach((prize, idx) => {
-                const div = document.createElement('div');
-                div.className = 'ladder-item';
-                div.dataset.level = idx;
-                div.innerHTML = `
-                    <span>${idx + 1}</span>
-                    <span>${prize}</span>
-                `;
-                ladderEl.insertBefore(div, ladderEl.firstChild);
-            });
-        }
-
-        function updateLadder(level) {
-            const items = document.querySelectorAll('.ladder-item');
-            items.forEach((item, idx) => {
-                const itemLevel = parseInt(item.dataset.level);
-                item.classList.remove('current', 'completed');
-                
-                if (itemLevel === level) {
-                    item.classList.add('current');
-                } else if (itemLevel < level) {
-                    item.classList.add('completed');
-                }
-            });
-        }
+        // Old buildLadder/updateLadder removed - using personal ladder (buildMyLadder/updateMyLadder) instead
 
         function loadQuestion(data) {
             currentQuestion = data;
@@ -628,7 +628,8 @@
             document.getElementById('prizeDisplay').textContent = data.prize;
             document.getElementById('questionBox').textContent = data.question;
 
-            updateLadder(data.questionNumber - 1);
+            // Update personal ladder to show current question
+            updateMyLadder();
 
             // Reset answer buttons
             const answersEl = document.getElementById('answersPanel');
@@ -664,6 +665,56 @@
             document.getElementById('fiftyBtn').disabled = !jokers.fifty || !isAlive;
             document.getElementById('audienceBtn').disabled = !jokers.audience || !isAlive;
             document.getElementById('phoneBtn').disabled = !jokers.phone || !isAlive;
+        }
+
+        function buildMyLadder() {
+            const listEl = document.getElementById('myLadderList');
+            listEl.innerHTML = '';
+            // Show from top (15) to bottom (1)
+            for (let i = prizeLevels.length - 1; i >= 0; i--) {
+                const div = document.createElement('div');
+                div.className = 'my-ladder-item my-pending';
+                div.dataset.level = i;
+                div.innerHTML = `<span class="ml-num">${i + 1}</span><span class="ml-prize">${prizeLevels[i]}</span><span class="ml-icon"></span>`;
+                listEl.appendChild(div);
+            }
+        }
+
+        function updateMyLadder() {
+            const items = document.querySelectorAll('.my-ladder-item');
+            items.forEach(item => {
+                const level = parseInt(item.dataset.level);
+                item.classList.remove('my-correct', 'my-wrong', 'my-current', 'my-pending');
+
+                const result = myResults.find(r => r.questionNum === level + 1);
+                if (result) {
+                    item.classList.add(result.correct ? 'my-correct' : 'my-wrong');
+                    item.querySelector('.ml-icon').textContent = result.correct ? '✓' : '✗';
+                } else if (currentQuestion && level + 1 === currentQuestion.questionNumber) {
+                    item.classList.add('my-current');
+                    item.querySelector('.ml-icon').textContent = '◄';
+                } else {
+                    item.classList.add('my-pending');
+                }
+            });
+
+            // Update summary
+            const correctCount = myResults.filter(r => r.correct).length;
+            const summaryEl = document.getElementById('myLadderSummary');
+            if (myResults.length > 0) {
+                // Calculate total prize earned (sum of correct answers' prize values)
+                let totalPrize = 0;
+                myResults.forEach(r => {
+                    if (r.correct) {
+                        // Parse prize string to number
+                        const prizeStr = prizeLevels[r.questionNum - 1];
+                        const num = parseInt(prizeStr.replace(/[^0-9]/g, ''));
+                        totalPrize += num;
+                    }
+                });
+                const formattedPrize = '€ ' + totalPrize.toLocaleString('de-CH');
+                summaryEl.innerHTML = `${correctCount} / ${myResults.length} richtig<div class="total-prize">${formattedPrize}</div>`;
+            }
         }
 
         let playerTimerInterval = null;
@@ -711,7 +762,7 @@
         }
 
         function selectAnswer(index, btn) {
-            if (!questionActive || !isAlive) return;
+            if (!questionActive) return;
 
             // Remove previous selection
             document.querySelectorAll('.answer-btn').forEach(b => {
@@ -721,8 +772,10 @@
             selectedAnswer = index;
             btn.classList.add('selected');
 
-            // Send answer to host
-            sendAnswer();
+            // Send answer to host (only if alive)
+            if (isAlive) {
+                sendAnswer();
+            }
         }
 
         function useFiftyFifty() {
@@ -830,22 +883,33 @@
 
             const correctAnswer = data.correctAnswer;
             const buttons = document.querySelectorAll('.answer-btn');
-            
+
             // Show correct answer
             buttons[correctAnswer].classList.add('correct');
-            
+
             // Show wrong answer if selected
             if (selectedAnswer !== null && selectedAnswer !== correctAnswer) {
                 buttons[selectedAnswer].classList.add('wrong');
             }
 
-            // Check own result
-            const ownResult = data.results.find(r => r.name === playerName);
-            
-            if (ownResult) {
-                const statusBar = document.getElementById('statusBar');
-                const statusText = document.getElementById('statusText');
-                
+            // Track personal result (works in both alive and dead mode)
+            const wasCorrect = selectedAnswer === correctAnswer;
+            myResults.push({
+                questionNum: currentQuestion.questionNumber,
+                correct: wasCorrect,
+                myAnswer: selectedAnswer,
+                correctAnswer: correctAnswer
+            });
+
+            // Update personal ladder
+            updateMyLadder();
+
+            // Check own result from host (only matters if alive)
+            const ownResult = data.results ? data.results.find(r => r.name === playerName) : null;
+            const statusBar = document.getElementById('statusBar');
+            const statusText = document.getElementById('statusText');
+
+            if (isAlive && ownResult) {
                 if (ownResult.correct) {
                     statusBar.classList.remove('dead');
                     statusBar.classList.add('alive');
@@ -855,54 +919,94 @@
                     isAlive = false;
                     statusBar.classList.remove('alive');
                     statusBar.classList.add('dead');
-                    statusText.textContent = '✗ Leider falsch. Du spielst jetzt im roten Modus weiter.';
+                    statusText.textContent = '✗ Falsch — du spielst im roten Modus weiter!';
                     statusText.style.color = '#f44336';
-                    
+
                     // Disable jokers
                     document.querySelectorAll('.joker-btn').forEach(btn => {
                         btn.disabled = true;
                     });
                 }
+            } else if (!isAlive) {
+                // Red mode: just show if answer was correct
+                if (wasCorrect) {
+                    statusText.textContent = '✓ Richtig getippt! (Roter Modus)';
+                    statusText.style.color = '#ffd700';
+                } else if (selectedAnswer !== null) {
+                    statusText.textContent = '✗ Falsch getippt. (Roter Modus)';
+                    statusText.style.color = '#f44336';
+                } else {
+                    statusText.textContent = 'Keine Antwort gewählt. (Roter Modus)';
+                    statusText.style.color = '#888';
+                }
             }
 
             // Check if we were called by someone (for display purposes)
-            data.results.forEach(result => {
-                if (result.explanation && result.explanation.includes(playerName)) {
-                    document.getElementById('calledIndicator').style.display = 'block';
-                    setTimeout(() => {
-                        document.getElementById('calledIndicator').style.display = 'none';
-                    }, 5000);
-                }
-            });
+            if (data.results) {
+                data.results.forEach(result => {
+                    if (result.explanation && result.explanation.includes(playerName)) {
+                        document.getElementById('calledIndicator').style.display = 'block';
+                        setTimeout(() => {
+                            document.getElementById('calledIndicator').style.display = 'none';
+                        }, 5000);
+                    }
+                });
+            }
         }
 
         function showGameEnd(data) {
             const gameScreen = document.getElementById('gameScreen');
             gameScreen.innerHTML = '';
-            
+
+            // Calculate personal stats
+            const correctCount = myResults.filter(r => r.correct).length;
+            let totalPrize = 0;
+            myResults.forEach(r => {
+                if (r.correct) {
+                    const prizeStr = prizeLevels[r.questionNum - 1];
+                    totalPrize += parseInt(prizeStr.replace(/[^0-9]/g, ''));
+                }
+            });
+            const formattedPrize = '€ ' + totalPrize.toLocaleString('de-CH');
+
+            const isWinner = data.winners && data.winners.includes(playerName);
+
             const resultDiv = document.createElement('div');
-            resultDiv.className = 'result-screen';
-            
-            if (data.winners && data.winners.includes(playerName)) {
-                resultDiv.classList.add('winner');
-                resultDiv.innerHTML = `
-                    <h2>🎉 GEWONNEN! 🎉</h2>
-                    <p style="font-size: 24px; margin: 20px 0;">Du hast gewonnen!</p>
-                    <p style="font-size: 32px; font-weight: bold; color: #ffd700;">${data.prize}</p>
-                `;
+            resultDiv.className = 'result-screen ' + (isWinner ? 'winner' : 'loser');
+
+            let html = '';
+            if (isWinner) {
+                html += `<h2>🎉 GEWONNEN! 🎉</h2>`;
+                html += `<p style="font-size: 20px; margin: 10px 0;">Du hast alle Fragen geschafft!</p>`;
+                html += `<p style="font-size: 32px; font-weight: bold; color: #ffd700;">${data.prize}</p>`;
             } else {
-                resultDiv.classList.add('loser');
-                resultDiv.innerHTML = `
-                    <h2>Spiel beendet</h2>
-                    <p style="font-size: 20px; margin: 20px 0;">
-                        ${isAlive ? 'Das Spiel ist zu Ende.' : 'Du bist in Frage ' + (currentQuestion.questionNumber) + ' ausgeschieden.'}
-                    </p>
-                    ${data.winners && data.winners.length > 0 ? 
-                        `<p style="margin-top: 20px;">Gewinner: ${data.winners.join(', ')}</p>` : 
-                        '<p style="margin-top: 20px;">Niemand hat gewonnen!</p>'}
-                `;
+                html += `<h2>Spiel beendet</h2>`;
+                if (data.winners && data.winners.length > 0) {
+                    html += `<p style="margin: 10px 0;">Gewinner: <strong>${data.winners.join(', ')}</strong></p>`;
+                }
             }
-            
+
+            // Personal summary
+            html += `<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.1);">`;
+            html += `<p style="font-size: 16px; color: #a0c4ff; margin-bottom: 10px;">Deine Zusammenfassung</p>`;
+            html += `<p style="font-size: 24px; font-weight: bold; color: #ffd700;">${correctCount} von ${myResults.length} richtig</p>`;
+            html += `<p style="font-size: 28px; font-weight: bold; color: #ffd700; margin-top: 8px;">${formattedPrize}</p>`;
+            html += `<p style="font-size: 12px; color: #8892b0; margin-top: 4px;">Summe aller richtigen Antworten</p>`;
+            html += `</div>`;
+
+            // Mini ladder review
+            html += `<div style="margin-top: 16px; text-align: left; max-height: 200px; overflow-y: auto;">`;
+            myResults.forEach(r => {
+                const icon = r.correct ? '✓' : '✗';
+                const color = r.correct ? '#4caf50' : '#f44336';
+                html += `<div style="display:flex; justify-content:space-between; padding:4px 8px; margin:2px 0; border-radius:4px; background:rgba(255,255,255,0.05);">
+                    <span>Frage ${r.questionNum}: ${prizeLevels[r.questionNum - 1]}</span>
+                    <span style="color:${color}; font-weight:bold;">${icon}</span>
+                </div>`;
+            });
+            html += `</div>`;
+
+            resultDiv.innerHTML = html;
             gameScreen.appendChild(resultDiv);
         }
 

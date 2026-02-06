@@ -107,6 +107,12 @@
             display: flex;
             align-items: center;
             transition: all 0.5s ease;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .answer-display.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         .answer-display .label {
             font-weight: bold;
@@ -385,7 +391,7 @@
 
                 updateLadder(data.questionNumber - 1);
 
-                // Build answer buttons
+                // Build answer buttons (hidden first, then reveal one by one)
                 const answersEl = document.getElementById('displayAnswers');
                 answersEl.innerHTML = '';
                 data.answers.forEach((answer, idx) => {
@@ -396,8 +402,16 @@
                     answersEl.appendChild(div);
                 });
 
-                // Start local timer
-                startDisplayTimer();
+                // Reveal answers one by one like the original show
+                data.answers.forEach((_, idx) => {
+                    setTimeout(() => {
+                        const el = document.getElementById('displayAnswer' + idx);
+                        if (el) el.classList.add('visible');
+                    }, 600 * (idx + 1));
+                });
+
+                // Start local timer after all answers are visible
+                setTimeout(() => startDisplayTimer(), 600 * (data.answers.length + 1));
             }
 
             if (data.type === 'timerStop') {
