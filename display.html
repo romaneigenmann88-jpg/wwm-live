@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WWM Live - Beamer Anzeige</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .display-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 30px 40px;
+        }
+
+        /* --- Header --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            font-size: 36px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header-info {
+            display: flex;
+            gap: 30px;
+            font-size: 20px;
+        }
+        .header-info .prize {
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        /* --- Main area --- */
+        .main-area {
+            flex: 1;
+            display: flex;
+            gap: 30px;
+        }
+
+        /* --- Question & Answers (left) --- */
+        .question-area {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .timer-display {
+            font-size: 72px;
+            text-align: center;
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .timer-display.warning {
+            color: #ff6f00;
+            animation: pulse 1s ease infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .question-display {
+            background: linear-gradient(135deg, #1e3a5f, #2c5282);
+            border-radius: 16px;
+            padding: 40px;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            text-align: center;
+            border: 2px solid rgba(58, 123, 213, 0.3);
+        }
+
+        .answers-display {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            flex: 1;
+        }
+
+        .answer-display {
+            background: linear-gradient(135deg, #1a2849, #243b5e);
+            border: 2px solid #3a7bd5;
+            border-radius: 12px;
+            padding: 25px 30px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            transition: all 0.5s ease;
+        }
+        .answer-display .label {
+            font-weight: bold;
+            margin-right: 14px;
+            color: #ffd700;
+            font-size: 28px;
+        }
+        .answer-display.correct {
+            background: linear-gradient(135deg, #2e7d32, #43a047);
+            border-color: #66bb6a;
+        }
+        .answer-display.wrong-highlight {
+            background: linear-gradient(135deg, #c62828, #e53935);
+            border-color: #ef5350;
+        }
+
+        /* --- Ladder (right) --- */
+        .ladder-area {
+            flex: 1;
+            background: rgba(10, 20, 40, 0.95);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .ladder-area h3 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 12px;
+            font-size: 20px;
+        }
+        .ladder-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 4px;
+            overflow: hidden;
+        }
+        .ladder-item {
+            padding: 8px 14px;
+            border-radius: 6px;
+            background: rgba(26, 40, 73, 0.6);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .ladder-item.current {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .ladder-item.completed {
+            background: rgba(76, 175, 80, 0.3);
+            border-left: 3px solid #4caf50;
+        }
+        .ladder-item .num {
+            min-width: 28px;
+        }
+
+        /* --- Waiting / Lobby screen --- */
+        .waiting-screen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+        .waiting-screen h1 {
+            font-size: 64px;
+            background: linear-gradient(135deg, #ffd700, #ffed4e, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+        }
+        .waiting-screen .info {
+            font-size: 28px;
+            color: #a0c4ff;
+            margin-bottom: 40px;
+        }
+        .waiting-screen .player-count-big {
+            font-size: 120px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .waiting-screen .player-count-label {
+            font-size: 32px;
+            color: #8892b0;
+        }
+
+        /* --- Winner screen --- */
+        .winner-screen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .winner-display {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #000;
+            padding: 60px 80px;
+            border-radius: 24px;
+        }
+        .winner-display h2 { font-size: 48px; margin-bottom: 20px; }
+        .winner-display .names { font-size: 36px; margin: 20px 0; }
+        .winner-display .prize { font-size: 48px; font-weight: bold; }
+
+        .stats-display {
+            display: flex;
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .stat-card {
+            background: rgba(26, 40, 73, 0.8);
+            padding: 30px 40px;
+            border-radius: 16px;
+            text-align: center;
+        }
+        .stat-card .value { font-size: 48px; color: #ffd700; font-weight: bold; }
+        .stat-card .label { font-size: 18px; color: #a0c4ff; margin-top: 8px; }
+
+        /* Hide game initially */
+        .game-view { display: none; }
+        .game-view.active { display: flex; }
+        .winner-view { display: none; }
+        .winner-view.active { display: flex; }
+    </style>
+</head>
+<body>
+
+    <!-- Waiting / Lobby -->
+    <div id="waitingView" class="waiting-screen">
+        <h1>🎮 Wer wird Millionär</h1>
+        <p class="info">LIVE Multiplayer Edition</p>
+        <div class="player-count-big" id="displayPlayerCount">0</div>
+        <div class="player-count-label">Spieler verbunden</div>
+    </div>
+
+    <!-- Game View -->
+    <div id="gameView" class="display-container game-view">
+        <div class="header">
+            <h1>🎮 Wer wird Millionär</h1>
+            <div class="header-info">
+                <span>Frage <strong id="displayQuestionNum">1</strong> / 15</span>
+                <span>Spieler: <strong id="displayActivePlayers">0</strong></span>
+                <span class="prize" id="displayPrize">€ 50</span>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="question-area">
+                <div class="timer-display" id="displayTimer">30</div>
+                <div class="question-display" id="displayQuestion">Frage wird geladen...</div>
+                <div class="answers-display" id="displayAnswers"></div>
+            </div>
+
+            <div class="ladder-area">
+                <h3>Gewinnleiter</h3>
+                <div class="ladder-list" id="displayLadder"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Winner View -->
+    <div id="winnerView" class="winner-view">
+        <div class="winner-screen">
+            <div class="winner-display" id="winnerContent"></div>
+            <div class="stats-display" id="winnerStats"></div>
+        </div>
+    </div>
+
+    <script>
+        const prizeLevels = [
+            "€ 50", "€ 100", "€ 200", "€ 300", "€ 500",
+            "€ 1.000", "€ 2.000", "€ 4.000", "€ 8.000", "€ 16.000",
+            "€ 32.000", "€ 64.000", "€ 125.000", "€ 500.000", "€ 1.000.000"
+        ];
+
+        // Build ladder
+        const ladderEl = document.getElementById('displayLadder');
+        prizeLevels.forEach((prize, idx) => {
+            const div = document.createElement('div');
+            div.className = 'ladder-item';
+            div.dataset.level = idx;
+            div.innerHTML = `<span class="num">${idx + 1}</span><span>${prize}</span>`;
+            ladderEl.appendChild(div);
+        });
+
+        function updateLadder(level) {
+            document.querySelectorAll('.ladder-item').forEach(item => {
+                const l = parseInt(item.dataset.level);
+                item.classList.remove('current', 'completed');
+                if (l === level) item.classList.add('current');
+                else if (l < level) item.classList.add('completed');
+            });
+        }
+
+        // Listen for messages from host dashboard via BroadcastChannel
+        const channel = new BroadcastChannel('wwm-live');
+
+        channel.onmessage = function(event) {
+            const data = event.data;
+
+            if (data.type === 'playerCount') {
+                document.getElementById('displayPlayerCount').textContent = data.count;
+            }
+
+            if (data.type === 'gameStart') {
+                document.getElementById('waitingView').style.display = 'none';
+                document.getElementById('gameView').classList.add('active');
+            }
+
+            if (data.type === 'question') {
+                document.getElementById('displayQuestionNum').textContent = data.questionNumber;
+                document.getElementById('displayPrize').textContent = data.prize;
+                document.getElementById('displayActivePlayers').textContent = data.activePlayers;
+                document.getElementById('displayQuestion').textContent = data.question;
+                document.getElementById('displayTimer').textContent = '30';
+                document.getElementById('displayTimer').classList.remove('warning');
+
+                updateLadder(data.questionNumber - 1);
+
+                // Build answer buttons
+                const answersEl = document.getElementById('displayAnswers');
+                answersEl.innerHTML = '';
+                data.answers.forEach((answer, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'answer-display';
+                    div.id = 'displayAnswer' + idx;
+                    div.innerHTML = `<span class="label">${String.fromCharCode(65 + idx)}:</span><span>${answer}</span>`;
+                    answersEl.appendChild(div);
+                });
+
+                // Start local timer
+                startDisplayTimer();
+            }
+
+            if (data.type === 'timerStop') {
+                stopDisplayTimer();
+            }
+
+            if (data.type === 'reveal') {
+                stopDisplayTimer();
+                // Highlight correct answer
+                const el = document.getElementById('displayAnswer' + data.correctAnswer);
+                if (el) el.classList.add('correct');
+
+                document.getElementById('displayActivePlayers').textContent = data.activePlayers;
+            }
+
+            if (data.type === 'gameEnd') {
+                document.getElementById('gameView').classList.remove('active');
+                document.getElementById('winnerView').classList.add('active');
+
+                const content = document.getElementById('winnerContent');
+                if (data.winners && data.winners.length > 0) {
+                    content.innerHTML = `
+                        <h2>🎉 GEWONNEN! 🎉</h2>
+                        <div class="names">${data.winners.join(', ')}</div>
+                        <div class="prize">${data.prize}</div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <h2>Spiel beendet</h2>
+                        <div class="names">Leider hat es niemand geschafft!</div>
+                    `;
+                }
+
+                const statsEl = document.getElementById('winnerStats');
+                statsEl.innerHTML = `
+                    <div class="stat-card"><div class="value">${data.totalPlayers}</div><div class="label">Teilnehmer</div></div>
+                    <div class="stat-card"><div class="value">${data.survivors}</div><div class="label">Überlebende</div></div>
+                    <div class="stat-card"><div class="value">${data.questionsAsked}</div><div class="label">Fragen gestellt</div></div>
+                `;
+            }
+        };
+
+        // Display timer (visual only, host is authoritative)
+        let displayTimerInterval = null;
+        let displayTimeLeft = 30;
+
+        function startDisplayTimer() {
+            stopDisplayTimer();
+            displayTimeLeft = 30;
+            const timerEl = document.getElementById('displayTimer');
+            timerEl.classList.remove('warning');
+            timerEl.textContent = displayTimeLeft;
+
+            displayTimerInterval = setInterval(() => {
+                displayTimeLeft--;
+                timerEl.textContent = Math.max(displayTimeLeft, 0);
+                if (displayTimeLeft <= 10) timerEl.classList.add('warning');
+                if (displayTimeLeft <= 0) {
+                    clearInterval(displayTimerInterval);
+                    displayTimerInterval = null;
+                }
+            }, 1000);
+        }
+
+        function stopDisplayTimer() {
+            if (displayTimerInterval) {
+                clearInterval(displayTimerInterval);
+                displayTimerInterval = null;
+            }
+            const timerEl = document.getElementById('displayTimer');
+            timerEl.classList.remove('warning');
+            timerEl.textContent = '—';
+        }
+    </script>
+</body>
+</html>

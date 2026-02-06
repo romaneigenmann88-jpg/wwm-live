@@ -3,493 +3,434 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WWM Live - Host</title>
+    <title>WWM Live - Host Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
-            color: #fff;
+            background: #0d1117;
+            color: #e6edf3;
             min-height: 100vh;
-            padding: 20px;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 32px;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, #ffd700, #ffed4e, #ffd700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .setup-screen {
-            background: rgba(10, 20, 40, 0.95);
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            max-width: 600px;
-            margin: 50px auto;
-        }
-
-        .setup-screen h2 {
-            margin-bottom: 20px;
-            color: #ffd700;
-        }
-
-        #qrcode {
-            margin: 30px auto;
-            display: inline-block;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-        }
-
-        .join-url {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-size: 18px;
-            word-break: break-all;
-        }
-
-        .player-count {
-            font-size: 24px;
-            margin: 20px 0;
-            color: #4caf50;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #ff9800, #ff6f00);
-            border: none;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 30px;
-            cursor: pointer;
-            color: #fff;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
-            margin: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .game-screen {
-            display: none;
-        }
-
-        .game-screen.active {
-            display: block;
-        }
-
-        .game-header {
+        /* --- Top Bar --- */
+        .top-bar {
+            background: #161b22;
+            border-bottom: 1px solid #30363d;
+            padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(10, 20, 40, 0.95);
-            border-radius: 12px;
         }
-
-        .question-display {
-            background: linear-gradient(135deg, #1e3a5f, #2c5282);
-            border-radius: 16px;
-            padding: 40px;
-            min-height: 150px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 30px;
-            border: 2px solid rgba(58, 123, 213, 0.3);
-        }
-
-        .answers-display {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .answer-display {
-            background: linear-gradient(135deg, #1a2849, #243b5e);
-            border: 2px solid #3a7bd5;
-            border-radius: 12px;
-            padding: 25px;
+        .top-bar h1 {
             font-size: 20px;
-        }
-
-        .answer-display .label {
-            font-weight: bold;
-            margin-right: 10px;
             color: #ffd700;
         }
+        .top-bar .status {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 14px;
+        }
+        .top-bar .status .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .dot.green { background: #3fb950; }
+        .dot.red { background: #f85149; }
 
-        .timer-display {
-            font-size: 48px;
-            text-align: center;
-            color: #ffd700;
-            margin: 20px 0;
-            font-weight: bold;
+        /* --- Layout --- */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 0;
+            height: calc(100vh - 52px);
         }
 
-        .timer-display.warning {
-            color: #ff6f00;
-            animation: pulse 1s ease infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .players-panel {
-            background: rgba(10, 20, 40, 0.95);
-            border-radius: 16px;
+        /* --- Main Panel (left) --- */
+        .main-panel {
             padding: 20px;
-            max-height: 600px;
             overflow-y: auto;
         }
 
-        .players-panel h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
+        /* --- Sidebar (right) --- */
+        .sidebar {
+            background: #161b22;
+            border-left: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid #30363d;
+        }
+        .sidebar-section h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+        .player-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px 16px;
         }
 
-        .player-item {
-            background: rgba(26, 40, 73, 0.8);
-            padding: 12px;
+        /* --- Cards --- */
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
             border-radius: 8px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card h2 {
+            font-size: 16px;
+            color: #ffd700;
+            margin-bottom: 14px;
         }
 
-        .player-item.dead {
-            opacity: 0.6;
-            border-left-color: #f44336;
+        /* --- Setup Screen --- */
+        .setup-card {
+            max-width: 500px;
+            margin: 40px auto;
+            text-align: center;
+        }
+        #qrcode {
+            margin: 20px auto;
+            display: inline-block;
+            padding: 16px;
+            background: white;
+            border-radius: 10px;
+        }
+        .join-url {
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            word-break: break-all;
+            color: #58a6ff;
+            margin: 12px 0;
+        }
+        .open-display-btn {
+            background: #238636;
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: 600;
+        }
+        .open-display-btn:hover { background: #2ea043; }
+
+        /* --- Buttons --- */
+        .btn {
+            background: linear-gradient(135deg, #ff9800, #ff6f00);
+            border: none;
+            padding: 12px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #fff;
+            transition: all 0.2s;
+            margin: 4px;
+        }
+        .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,152,0,0.3); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.green { background: #238636; }
+        .btn.green:hover:not(:disabled) { background: #2ea043; }
+        .btn.red { background: #da3633; }
+        .btn.red:hover:not(:disabled) { background: #f85149; }
+
+        /* --- Game Info --- */
+        .game-info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .info-box {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+        }
+        .info-box .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .info-box .label {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 4px;
         }
 
-        .player-item.answered {
-            border-left-color: #ffd700;
+        /* --- Question Preview --- */
+        .question-preview {
+            background: linear-gradient(135deg, #1e3a5f, #2c5282);
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 14px;
         }
-
-        .player-status {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .answer-item {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px 14px;
             font-size: 14px;
         }
-
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
+        .answer-item .letter {
+            color: #ffd700;
             font-weight: bold;
+            margin-right: 8px;
+        }
+        .answer-item.is-correct {
+            border-color: #3fb950;
+            background: rgba(63, 185, 80, 0.1);
         }
 
-        .status-badge.alive {
-            background: #4caf50;
-        }
-
-        .status-badge.dead {
-            background: #f44336;
-        }
-
-        .status-badge.answered {
-            background: #ffd700;
-            color: #000;
-        }
-
-        .control-panel {
-            background: rgba(10, 20, 40, 0.95);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
+        /* --- Control Buttons --- */
+        .controls {
             display: flex;
-            gap: 15px;
-            justify-content: center;
+            gap: 8px;
             flex-wrap: wrap;
         }
 
-        .results-display {
-            background: rgba(10, 20, 40, 0.95);
-            border-radius: 16px;
-            padding: 30px;
-            margin-top: 20px;
-        }
-
-        .results-display h3 {
-            color: #ffd700;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .result-item {
-            background: rgba(26, 40, 73, 0.8);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
+        /* --- Results --- */
+        .results-list { margin-top: 12px; }
+        .result-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .result-item.correct {
-            border-left: 4px solid #4caf50;
-        }
-
-        .result-item.wrong {
-            border-left: 4px solid #f44336;
-        }
-
-        .game-layout {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 1200px) {
-            .game-layout {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .winner-display {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            color: #000;
-            padding: 40px;
-            border-radius: 16px;
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        .winner-display h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
-
-        .stats-display {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .stat-card {
-            background: rgba(26, 40, 73, 0.8);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .stat-card .value {
-            font-size: 32px;
-            color: #ffd700;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-card .label {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 4px;
             font-size: 14px;
-            color: #a0c4ff;
         }
+        .result-row.correct { background: rgba(63,185,80,0.15); border-left: 3px solid #3fb950; }
+        .result-row.wrong { background: rgba(248,81,73,0.15); border-left: 3px solid #f85149; }
 
+        /* --- Player Items --- */
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            font-size: 14px;
+        }
+        .player-item.dead { opacity: 0.5; border-left: 3px solid #f85149; }
+        .player-item.alive { border-left: 3px solid #3fb950; }
+        .player-item.answered { border-left: 3px solid #ffd700; }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .badge.alive { background: #238636; }
+        .badge.dead { background: #da3633; }
+        .badge.answered { background: #9e6a03; color: #fff; }
+        .badge.connected { background: #1f6feb; }
+
+        /* --- Sound Panel --- */
+        .sound-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .sound-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .sound-btn:hover { background: #30363d; border-color: #58a6ff; }
+        .sound-btn.playing { background: #1f6feb; border-color: #58a6ff; }
+        .stop-sound-btn {
+            grid-column: 1 / -1;
+            background: #da3633;
+            border: none;
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .stop-sound-btn:hover { background: #f85149; }
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .volume-control input { flex: 1; }
+        .volume-control label { font-size: 12px; color: #8b949e; }
+
+        /* --- Hidden --- */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎮 Wer wird Millionär - LIVE Edition</h1>
-        
-        <!-- Setup Screen -->
-        <div id="setupScreen" class="setup-screen">
-            <h2>Spiel einrichten</h2>
+    <div class="top-bar">
+        <h1>🎮 WWM Live — Host Dashboard</h1>
+        <div class="status">
+            <span><span class="dot green" id="peerDot"></span> <span id="peerStatus">Verbinde...</span></span>
+            <span>Spieler: <strong id="topPlayerCount">0</strong></span>
+            <span>Aktiv: <strong id="topAlivePlayers">0</strong></span>
+        </div>
+    </div>
 
-            <p>Warte auf Spieler...</p>
-            <div id="qrcode"></div>
-            <div class="join-url" id="joinUrl">Lade...</div>
-            <div class="player-count">
-                <span id="playerCount">0</span> Spieler verbunden
+    <div class="dashboard">
+        <!-- ===== MAIN PANEL ===== -->
+        <div class="main-panel">
+
+            <!-- SETUP -->
+            <div id="setupPanel">
+                <div class="card setup-card">
+                    <h2>Spiel einrichten</h2>
+                    <p style="color:#8b949e; margin-bottom:14px;">Spieler scannen den QR-Code oder öffnen den Link:</p>
+                    <div id="qrcode"></div>
+                    <div class="join-url" id="joinUrl">Warte auf Verbindung...</div>
+                    <div>
+                        <button class="open-display-btn" id="openDisplayBtn">📺 Beamer-Anzeige öffnen</button>
+                    </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn green" id="startGameBtn" disabled>▶ Spiel starten</button>
+                    </div>
+                </div>
             </div>
-            <button class="btn" id="startGameBtn" disabled>Spiel starten</button>
+
+            <!-- GAME -->
+            <div id="gamePanel" class="hidden">
+                <div class="game-info-grid">
+                    <div class="info-box">
+                        <div class="value" id="infoQuestion">1</div>
+                        <div class="label">Frage</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="value" id="infoTimer">30</div>
+                        <div class="label">Sekunden</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="value" id="infoAlive">0</div>
+                        <div class="label">Aktiv</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="value" id="infoPrize">€ 50</div>
+                        <div class="label">Gewinnstufe</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Aktuelle Frage</h2>
+                    <div class="question-preview" id="dashQuestion">—</div>
+                    <div class="answers-grid" id="dashAnswers"></div>
+                    <div class="controls">
+                        <button class="btn" id="revealBtn" disabled>🔓 Auflösung zeigen</button>
+                        <button class="btn green" id="nextBtn" disabled>➡ Nächste Frage</button>
+                    </div>
+                </div>
+
+                <div class="card" id="resultsCard" style="display:none;">
+                    <h2>Ergebnisse dieser Runde</h2>
+                    <div class="results-list" id="resultsList"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- Game Screen -->
-        <div id="gameScreen" class="game-screen">
-            <div class="game-layout">
-                <div class="main-area">
-                    <div class="game-header">
-                        <div>
-                            <strong>Frage <span id="currentQuestion">1</span> von 15</strong>
-                        </div>
-                        <div>
-                            <strong>Aktive Spieler: <span id="activePlayers">0</span></strong>
-                        </div>
-                    </div>
-
-                    <div class="timer-display" id="timerDisplay">30</div>
-
-                    <div class="question-display" id="questionDisplay">
-                        Frage wird geladen...
-                    </div>
-
-                    <div class="answers-display" id="answersDisplay">
-                        <div class="answer-display">
-                            <span class="label">A:</span>
-                            <span>Antwort 1</span>
-                        </div>
-                        <div class="answer-display">
-                            <span class="label">B:</span>
-                            <span>Antwort 2</span>
-                        </div>
-                        <div class="answer-display">
-                            <span class="label">C:</span>
-                            <span>Antwort 3</span>
-                        </div>
-                        <div class="answer-display">
-                            <span class="label">D:</span>
-                            <span>Antwort 4</span>
-                        </div>
-                    </div>
-
-                    <div class="control-panel">
-                        <button class="btn" id="revealBtn" disabled>Auflösung zeigen</button>
-                        <button class="btn" id="nextBtn" disabled>Nächste Frage</button>
-                    </div>
-
-                    <div class="results-display" id="resultsDisplay" style="display: none;">
-                        <h3>Ergebnisse dieser Runde</h3>
-                        <div id="resultsList"></div>
-                    </div>
+        <!-- ===== SIDEBAR ===== -->
+        <div class="sidebar">
+            <!-- Sound Controls -->
+            <div class="sidebar-section">
+                <h3>🔊 Sounds</h3>
+                <div class="sound-grid">
+                    <button class="sound-btn" data-sound="intro">🎬 Intro</button>
+                    <button class="sound-btn" data-sound="login">🔑 Login</button>
+                    <button class="sound-btn" data-sound="lvl1">🎵 Level 1</button>
+                    <button class="sound-btn" data-sound="lvl2">🎵 Level 2</button>
+                    <button class="sound-btn" data-sound="lvl3">🎵 Level 3</button>
+                    <button class="sound-btn" data-sound="5050">🎯 50:50</button>
+                    <button class="sound-btn" data-sound="audience">👥 Publikum</button>
+                    <button class="sound-btn" data-sound="phone">📞 Telefon</button>
+                    <button class="sound-btn" data-sound="correct">✅ Richtig</button>
+                    <button class="sound-btn" data-sound="wrong">❌ Falsch</button>
+                    <button class="sound-btn" data-sound="win">🏆 Gewinn</button>
+                    <button class="sound-btn" data-sound="outro">🎬 Outro</button>
+                    <button class="stop-sound-btn" id="stopSoundBtn">⏹ Sound stoppen</button>
                 </div>
-
-                <div class="side-area">
-                    <div class="players-panel">
-                        <h3>Spieler (<span id="playerListCount">0</span>)</h3>
-                        <div id="playersList"></div>
-                    </div>
+                <div class="volume-control">
+                    <label>🔈</label>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="80">
+                    <label>🔊</label>
                 </div>
             </div>
+
+            <!-- Player List -->
+            <div class="sidebar-section">
+                <h3>Spieler (<span id="sidebarPlayerCount">0</span>)</h3>
+            </div>
+            <div class="player-list" id="playersList"></div>
         </div>
     </div>
 
     <script>
-        // Fragen-Datenbank (15 Fragen)
+        // ===== QUESTIONS =====
         const questions = [
-            {
-                question: "Welche Farbe hat ein Smaragd?",
-                answers: ["Rot", "Grün", "Blau", "Gelb"],
-                correct: 1
-            },
-            {
-                question: "Wie viele Beine hat eine Spinne?",
-                answers: ["6", "8", "10", "12"],
-                correct: 1
-            },
-            {
-                question: "Welcher Planet ist der Sonne am nächsten?",
-                answers: ["Venus", "Merkur", "Mars", "Erde"],
-                correct: 1
-            },
-            {
-                question: "In welchem Jahr fiel die Berliner Mauer?",
-                answers: ["1987", "1989", "1991", "1993"],
-                correct: 1
-            },
-            {
-                question: "Wie heisst die Hauptstadt von Australien?",
-                answers: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
-                correct: 2
-            },
-            {
-                question: "Welches chemische Element hat das Symbol 'Au'?",
-                answers: ["Silber", "Gold", "Aluminium", "Kupfer"],
-                correct: 1
-            },
-            {
-                question: "Wie viele Spieler hat eine Fussballmannschaft auf dem Feld?",
-                answers: ["9", "10", "11", "12"],
-                correct: 2
-            },
-            {
-                question: "Wer schrieb 'Romeo und Julia'?",
-                answers: ["Charles Dickens", "William Shakespeare", "Mark Twain", "Jane Austen"],
-                correct: 1
-            },
-            {
-                question: "Welcher Ozean ist der grösste?",
-                answers: ["Atlantik", "Indischer Ozean", "Pazifik", "Arktischer Ozean"],
-                correct: 2
-            },
-            {
-                question: "In welchem Jahr wurde die Schweiz gegründet?",
-                answers: ["1291", "1315", "1499", "1648"],
-                correct: 0
-            },
-            {
-                question: "Wie viele Herzen hat ein Oktopus?",
-                answers: ["1", "2", "3", "4"],
-                correct: 2
-            },
-            {
-                question: "Welches ist der längste Fluss der Welt?",
-                answers: ["Amazonas", "Nil", "Mississippi", "Jangtse"],
-                correct: 1
-            },
-            {
-                question: "Wer entwickelte die Relativitätstheorie?",
-                answers: ["Isaac Newton", "Albert Einstein", "Stephen Hawking", "Niels Bohr"],
-                correct: 1
-            },
-            {
-                question: "Wie viele Knochen hat ein erwachsener Mensch?",
-                answers: ["186", "206", "226", "246"],
-                correct: 1
-            },
-            {
-                question: "In welchem Land steht der Eiffelturm?",
-                answers: ["Italien", "Spanien", "Frankreich", "Deutschland"],
-                correct: 2
-            }
+            { question: "Welche Farbe hat ein Smaragd?", answers: ["Rot", "Grün", "Blau", "Gelb"], correct: 1 },
+            { question: "Wie viele Beine hat eine Spinne?", answers: ["6", "8", "10", "12"], correct: 1 },
+            { question: "Welcher Planet ist der Sonne am nächsten?", answers: ["Venus", "Merkur", "Mars", "Erde"], correct: 1 },
+            { question: "In welchem Jahr fiel die Berliner Mauer?", answers: ["1987", "1989", "1991", "1993"], correct: 1 },
+            { question: "Wie heisst die Hauptstadt von Australien?", answers: ["Sydney", "Melbourne", "Canberra", "Brisbane"], correct: 2 },
+            { question: "Welches chemische Element hat das Symbol 'Au'?", answers: ["Silber", "Gold", "Aluminium", "Kupfer"], correct: 1 },
+            { question: "Wie viele Spieler hat eine Fussballmannschaft auf dem Feld?", answers: ["9", "10", "11", "12"], correct: 2 },
+            { question: "Wer schrieb 'Romeo und Julia'?", answers: ["Charles Dickens", "William Shakespeare", "Mark Twain", "Jane Austen"], correct: 1 },
+            { question: "Welcher Ozean ist der grösste?", answers: ["Atlantik", "Indischer Ozean", "Pazifik", "Arktischer Ozean"], correct: 2 },
+            { question: "In welchem Jahr wurde die Schweiz gegründet?", answers: ["1291", "1315", "1499", "1648"], correct: 0 },
+            { question: "Wie viele Herzen hat ein Oktopus?", answers: ["1", "2", "3", "4"], correct: 2 },
+            { question: "Welches ist der längste Fluss der Welt?", answers: ["Amazonas", "Nil", "Mississippi", "Jangtse"], correct: 1 },
+            { question: "Wer entwickelte die Relativitätstheorie?", answers: ["Isaac Newton", "Albert Einstein", "Stephen Hawking", "Niels Bohr"], correct: 1 },
+            { question: "Wie viele Knochen hat ein erwachsener Mensch?", answers: ["186", "206", "226", "246"], correct: 1 },
+            { question: "In welchem Land steht der Eiffelturm?", answers: ["Italien", "Spanien", "Frankreich", "Deutschland"], correct: 2 }
         ];
 
-        // Gewinnleiter
         const prizeLevels = [
             "€ 50", "€ 100", "€ 200", "€ 300", "€ 500",
             "€ 1.000", "€ 2.000", "€ 4.000", "€ 8.000", "€ 16.000",
             "€ 32.000", "€ 64.000", "€ 125.000", "€ 500.000", "€ 1.000.000"
         ];
 
-        // Game State
-        let peer;
-        let hostId;
+        // ===== STATE =====
+        let peer, hostId;
         let players = new Map();
         let currentQuestionIndex = 0;
         let gameStarted = false;
@@ -497,84 +438,114 @@
         let timerInterval;
         let timeLeft = 30;
 
-        // Initialize PeerJS
+        // ===== BROADCAST CHANNEL (to display.html) =====
+        const displayChannel = new BroadcastChannel('wwm-live');
+
+        function sendToDisplay(msg) {
+            displayChannel.postMessage(msg);
+        }
+
+        // ===== SOUND SYSTEM =====
+        const sounds = {};
+        const soundFiles = ['intro','login','lvl1','lvl2','lvl3','5050','audience','phone','correct','wrong','win','outro'];
+        let currentSound = null;
+
+        soundFiles.forEach(name => {
+            sounds[name] = new Audio('sounds/' + name + '.mp3');
+        });
+
+        function playSound(name) {
+            stopSound();
+            if (sounds[name]) {
+                currentSound = sounds[name];
+                currentSound.volume = document.getElementById('volumeSlider').value / 100;
+                currentSound.currentTime = 0;
+                currentSound.play().catch(e => console.log('Sound play error:', e));
+                // Highlight button
+                document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('playing'));
+                const btn = document.querySelector(`.sound-btn[data-sound="${name}"]`);
+                if (btn) btn.classList.add('playing');
+                currentSound.onended = () => {
+                    document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('playing'));
+                    currentSound = null;
+                };
+            }
+        }
+
+        function stopSound() {
+            if (currentSound) {
+                currentSound.pause();
+                currentSound.currentTime = 0;
+                currentSound = null;
+            }
+            document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('playing'));
+        }
+
+        // Sound button listeners
+        document.querySelectorAll('.sound-btn').forEach(btn => {
+            btn.addEventListener('click', () => playSound(btn.dataset.sound));
+        });
+        document.getElementById('stopSoundBtn').addEventListener('click', stopSound);
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            if (currentSound) currentSound.volume = e.target.value / 100;
+        });
+
+        // ===== PEERJS =====
         function initPeer() {
             peer = new Peer();
-            
+
             peer.on('open', function(id) {
                 hostId = id;
-                console.log('Host ID:', id);
-                
+                document.getElementById('peerStatus').textContent = 'Verbunden';
+                document.getElementById('peerDot').className = 'dot green';
                 generateJoinUrl(id);
             });
 
             peer.on('connection', function(conn) {
-                console.log('New player connecting...');
-                
                 conn.on('open', function() {
                     conn.on('data', function(data) {
                         handlePlayerMessage(conn, data);
                     });
                 });
-
                 conn.on('close', function() {
                     removePlayer(conn.peer);
                 });
+            });
+
+            peer.on('error', function(err) {
+                document.getElementById('peerStatus').textContent = 'Fehler';
+                document.getElementById('peerDot').className = 'dot red';
             });
         }
 
         function generateJoinUrl(id) {
             const joinUrl = `${window.location.origin}${window.location.pathname.replace('host.html', 'player.html')}?host=${id}`;
-            console.log('Join URL:', joinUrl);
-            
             document.getElementById('joinUrl').textContent = joinUrl;
-            
-            // Clear and regenerate QR Code
+
             const qrcodeEl = document.getElementById('qrcode');
-            qrcodeEl.innerHTML = ''; // Clear old QR code
-            
+            qrcodeEl.innerHTML = '';
             try {
                 new QRCode(qrcodeEl, {
-                    text: joinUrl,
-                    width: 256,
-                    height: 256,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
+                    text: joinUrl, width: 200, height: 200,
+                    colorDark: '#000000', colorLight: '#ffffff',
                     correctLevel: QRCode.CorrectLevel.H
                 });
-                console.log('QR Code generated successfully');
-            } catch (error) {
-                console.error('Error generating QR code:', error);
-            }
+            } catch (e) { console.error('QR error:', e); }
         }
 
+        // ===== PLAYER MANAGEMENT =====
         function handlePlayerMessage(conn, data) {
-            console.log('Received from player:', data);
-
             if (data.type === 'join') {
                 const player = {
-                    id: conn.peer,
-                    name: data.name,
-                    conn: conn,
-                    alive: true,
-                    currentAnswer: null,
-                    jokers: {
-                        fifty: true,
-                        audience: true,
-                        phone: true
-                    },
+                    id: conn.peer, name: data.name, conn: conn,
+                    alive: true, currentAnswer: null,
+                    jokers: { fifty: true, audience: true, phone: true },
                     answered: false
                 };
-                
                 players.set(conn.peer, player);
-                updatePlayerCount();
-                updatePlayersList();
-                
-                // Send confirmation
-                conn.send({
-                    type: 'joined',
-                    success: true
-                });
+                updateUI();
+                conn.send({ type: 'joined', success: true });
+                playSound('login');
             }
 
             if (data.type === 'answer') {
@@ -590,68 +561,66 @@
             }
 
             if (data.type === 'useFiftyFifty') {
-                // Send back 2 wrong answer indices
                 const q = questions[currentQuestionIndex];
                 if (q) {
-                    const correctIndex = q.correct;
-                    const wrongIndices = [0, 1, 2, 3].filter(i => i !== correctIndex);
-                    
-                    // Shuffle and take 2
+                    const wrongIndices = [0,1,2,3].filter(i => i !== q.correct);
                     const shuffled = wrongIndices.sort(() => Math.random() - 0.5);
-                    const toRemove = shuffled.slice(0, 2);
-                    
-                    conn.send({
-                        type: 'fiftyFiftyResponse',
-                        wrongAnswers: toRemove
-                    });
+                    conn.send({ type: 'fiftyFiftyResponse', wrongAnswers: shuffled.slice(0, 2) });
                 }
             }
         }
 
         function removePlayer(playerId) {
             players.delete(playerId);
-            updatePlayerCount();
-            updatePlayersList();
+            updateUI();
         }
 
-        function updatePlayerCount() {
+        function updateUI() {
             const count = players.size;
-            document.getElementById('playerCount').textContent = count;
-            document.getElementById('playerListCount').textContent = count;
-            
-            const alivePlayers = Array.from(players.values()).filter(p => p.alive).length;
-            document.getElementById('activePlayers').textContent = alivePlayers;
-            
+            const alive = Array.from(players.values()).filter(p => p.alive).length;
+
+            document.getElementById('topPlayerCount').textContent = count;
+            document.getElementById('topAlivePlayers').textContent = alive;
+            document.getElementById('sidebarPlayerCount').textContent = count;
             document.getElementById('startGameBtn').disabled = count === 0;
+
+            if (gameStarted) {
+                document.getElementById('infoAlive').textContent = alive;
+            }
+
+            sendToDisplay({ type: 'playerCount', count: count });
+            updatePlayersList();
         }
 
         function updatePlayersList() {
             const listEl = document.getElementById('playersList');
             listEl.innerHTML = '';
-            
+
             players.forEach(player => {
                 const div = document.createElement('div');
                 div.className = 'player-item';
-                if (!player.alive) div.classList.add('dead');
-                if (player.answered) div.classList.add('answered');
-                
-                const statusBadges = [];
-                if (player.alive) {
-                    statusBadges.push('<span class="status-badge alive">✓ Lebt</span>');
+                if (!gameStarted) {
+                    div.classList.add('alive');
+                } else if (!player.alive) {
+                    div.classList.add('dead');
+                } else if (player.answered && questionActive) {
+                    div.classList.add('answered');
                 } else {
-                    statusBadges.push('<span class="status-badge dead">✗ Raus</span>');
+                    div.classList.add('alive');
                 }
-                
-                if (player.answered && questionActive) {
-                    statusBadges.push('<span class="status-badge answered">Geantwortet</span>');
+
+                let badge = '';
+                if (!gameStarted) {
+                    badge = '<span class="badge connected">Verbunden</span>';
+                } else if (!player.alive) {
+                    badge = '<span class="badge dead">Raus</span>';
+                } else if (player.answered && questionActive) {
+                    badge = '<span class="badge answered">✓</span>';
+                } else {
+                    badge = '<span class="badge alive">Lebt</span>';
                 }
-                
-                div.innerHTML = `
-                    <span>${player.name}</span>
-                    <div class="player-status">
-                        ${statusBadges.join('')}
-                    </div>
-                `;
+
+                div.innerHTML = `<span>${player.name}</span>${badge}`;
                 listEl.appendChild(div);
             });
         }
@@ -664,111 +633,104 @@
             });
         }
 
+        // ===== GAME FLOW =====
         function startGame() {
             gameStarted = true;
             currentQuestionIndex = 0;
-            
-            // Reset all players
+
             players.forEach(player => {
                 player.alive = true;
-                player.jokers = {
-                    fifty: true,
-                    audience: true,
-                    phone: true
-                };
+                player.jokers = { fifty: true, audience: true, phone: true };
             });
-            
-            document.getElementById('setupScreen').style.display = 'none';
-            document.getElementById('gameScreen').classList.add('active');
-            
-            broadcastToPlayers({
-                type: 'gameStart',
-                totalQuestions: questions.length
-            });
-            
-            loadQuestion();
+
+            document.getElementById('setupPanel').classList.add('hidden');
+            document.getElementById('gamePanel').classList.remove('hidden');
+
+            broadcastToPlayers({ type: 'gameStart', totalQuestions: questions.length });
+            sendToDisplay({ type: 'gameStart' });
+
+            playSound('intro');
+            // Wait for intro to finish, then load question
+            setTimeout(() => loadQuestion(), 3000);
         }
 
         function loadQuestion() {
-            if (currentQuestionIndex >= questions.length) {
-                endGame();
-                return;
-            }
-            
+            if (currentQuestionIndex >= questions.length) { endGame(); return; }
+
             const q = questions[currentQuestionIndex];
             questionActive = true;
             timeLeft = 30;
-            
-            // Reset answer states
+
             players.forEach(player => {
                 player.currentAnswer = null;
                 player.jokerUsed = null;
+                player.jokersUsed = [];
                 player.phoneTarget = null;
                 player.answered = false;
             });
-            
-            document.getElementById('currentQuestion').textContent = currentQuestionIndex + 1;
-            document.getElementById('questionDisplay').textContent = q.question;
-            
-            const answersEl = document.getElementById('answersDisplay');
+
+            // Update dashboard
+            document.getElementById('infoQuestion').textContent = currentQuestionIndex + 1;
+            document.getElementById('infoTimer').textContent = timeLeft;
+            document.getElementById('infoPrize').textContent = prizeLevels[currentQuestionIndex];
+            document.getElementById('dashQuestion').textContent = q.question;
+
+            const answersEl = document.getElementById('dashAnswers');
             answersEl.innerHTML = '';
             q.answers.forEach((answer, idx) => {
                 const div = document.createElement('div');
-                div.className = 'answer-display';
-                div.innerHTML = `
-                    <span class="label">${String.fromCharCode(65 + idx)}:</span>
-                    <span>${answer}</span>
-                `;
+                div.className = 'answer-item' + (idx === q.correct ? ' is-correct' : '');
+                div.innerHTML = `<span class="letter">${String.fromCharCode(65 + idx)}:</span> ${answer}`;
                 answersEl.appendChild(div);
             });
-            
-            document.getElementById('resultsDisplay').style.display = 'none';
+
+            document.getElementById('resultsCard').style.display = 'none';
             document.getElementById('revealBtn').disabled = false;
             document.getElementById('nextBtn').disabled = true;
-            
-            // Broadcast question to players
+
+            const alive = Array.from(players.values()).filter(p => p.alive).length;
+
+            // Broadcast to players
             const alivePlayers = Array.from(players.values())
-                .filter(p => p.alive)
-                .map(p => ({ id: p.id, name: p.name }));
-            
+                .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
+
             broadcastToPlayers({
-                type: 'question',
-                questionNumber: currentQuestionIndex + 1,
-                question: q.question,
-                answers: q.answers,
-                prize: prizeLevels[currentQuestionIndex],
-                alivePlayers: alivePlayers
+                type: 'question', questionNumber: currentQuestionIndex + 1,
+                question: q.question, answers: q.answers,
+                prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers
             });
-            
-            updatePlayersList();
+
+            // Send to display
+            sendToDisplay({
+                type: 'question', questionNumber: currentQuestionIndex + 1,
+                question: q.question, answers: q.answers,
+                prize: prizeLevels[currentQuestionIndex], activePlayers: alive
+            });
+
+            updateUI();
             startTimer();
+
+            // Auto-play level music
+            if (currentQuestionIndex < 5) playSound('lvl1');
+            else if (currentQuestionIndex < 10) playSound('lvl2');
+            else playSound('lvl3');
         }
 
         function startTimer() {
-            const timerEl = document.getElementById('timerDisplay');
-            timerEl.classList.remove('warning');
-            
+            clearInterval(timerInterval);
+            const timerEl = document.getElementById('infoTimer');
+
             timerInterval = setInterval(() => {
                 timeLeft--;
                 timerEl.textContent = timeLeft;
-                
-                if (timeLeft <= 10) {
-                    timerEl.classList.add('warning');
-                }
-                
+
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     questionActive = false;
-                    
-                    // Mark players who didn't answer as dead
                     players.forEach(player => {
-                        if (player.alive && !player.answered) {
-                            player.alive = false;
-                        }
+                        if (player.alive && !player.answered) player.alive = false;
                     });
-                    
-                    updatePlayersList();
-                    updatePlayerCount();
+                    updateUI();
                 }
             }, 1000);
         }
@@ -776,104 +738,69 @@
         function revealAnswer() {
             clearInterval(timerInterval);
             questionActive = false;
+            stopSound();
 
-            // Timer bei allen Spielern stoppen
             broadcastToPlayers({ type: 'timerStop' });
+            sendToDisplay({ type: 'timerStop' });
 
             const q = questions[currentQuestionIndex];
             const correctAnswer = q.correct;
-            
-            // Calculate results
             const results = [];
-            
+
             players.forEach(player => {
                 if (!player.alive) {
-                    results.push({
-                        name: player.name,
-                        status: 'dead',
-                        answer: '-',
-                        correct: false
-                    });
+                    results.push({ name: player.name, status: 'dead', answer: '-', correct: false });
                     return;
                 }
-                
                 if (!player.answered) {
                     player.alive = false;
-                    results.push({
-                        name: player.name,
-                        status: 'timeout',
-                        answer: 'Keine Antwort',
-                        correct: false
-                    });
+                    results.push({ name: player.name, status: 'timeout', answer: 'Keine Antwort', correct: false });
                     return;
                 }
-                
-                let isCorrect = false;
-                let explanation = '';
-                
-                // Check if audience joker was used (support both single and array format)
+
+                let isCorrect = false, explanation = '';
                 const usedJokers = player.jokersUsed || (player.jokerUsed ? [player.jokerUsed] : []);
                 const usedAudience = usedJokers.includes('audience');
                 const usedPhone = usedJokers.includes('phone');
                 const usedFifty = usedJokers.includes('fifty');
 
-                // Handle different joker scenarios
                 if (usedAudience) {
-                    // Publikumsjoker: Richtig wenn eigene Antwort ODER Mehrheit korrekt
                     const ownCorrect = player.currentAnswer === correctAnswer;
-
                     const aliveAnswers = Array.from(players.values())
                         .filter(p => p.alive && p.answered && p.id !== player.id)
                         .map(p => p.currentAnswer);
-
                     let majorityCorrect = false;
                     if (aliveAnswers.length > 0) {
-                        const counts = [0, 0, 0, 0];
+                        const counts = [0,0,0,0];
                         aliveAnswers.forEach(a => counts[a]++);
-                        const majorityAnswer = counts.indexOf(Math.max(...counts));
-                        majorityCorrect = majorityAnswer === correctAnswer;
+                        majorityCorrect = counts.indexOf(Math.max(...counts)) === correctAnswer;
                     }
-
                     isCorrect = ownCorrect || majorityCorrect;
-
-                    if (ownCorrect && majorityCorrect) {
-                        explanation = '(Publikumsjoker: Eigene Antwort & Mehrheit richtig)';
-                    } else if (ownCorrect) {
-                        explanation = '(Publikumsjoker: Eigene Antwort richtig)';
-                    } else if (majorityCorrect) {
-                        explanation = '(Publikumsjoker: Mehrheit hat dich gerettet!)';
-                    } else {
-                        explanation = '(Publikumsjoker: Eigene Antwort & Mehrheit falsch)';
-                    }
-                    
+                    if (ownCorrect && majorityCorrect) explanation = '(Publikum + Eigene ✓)';
+                    else if (ownCorrect) explanation = '(Eigene Antwort ✓)';
+                    else if (majorityCorrect) explanation = '(Mehrheit hat gerettet!)';
+                    else explanation = '(Beides falsch)';
                 } else if (usedPhone && player.phoneTarget) {
-                    // Phone joker: check target's answer
                     const target = players.get(player.phoneTarget);
                     if (target && target.alive && target.answered) {
                         if (target.currentAnswer === correctAnswer) {
                             isCorrect = true;
-                            explanation = `(Telefonjoker: ${target.name} hatte recht)`;
+                            explanation = `(📞 ${target.name} ✓)`;
                         } else {
                             isCorrect = player.currentAnswer === correctAnswer;
-                            explanation = `(Telefonjoker: Eigene Wahl)`;
+                            explanation = `(📞 Eigene Wahl)`;
                         }
                     } else {
                         isCorrect = player.currentAnswer === correctAnswer;
-                        explanation = '(Telefonjoker: Ziel nicht verfügbar)';
+                        explanation = '(📞 Nicht verfügbar)';
                     }
-
                 } else {
-                    // Normal answer or 50:50 joker
                     isCorrect = player.currentAnswer === correctAnswer;
-                    if (usedFifty) {
-                        explanation = '(50:50 Joker verwendet)';
-                    }
+                    if (usedFifty) explanation = '(50:50)';
                 }
-                
-                if (!isCorrect) {
-                    player.alive = false;
-                }
-                
+
+                if (!isCorrect) player.alive = false;
+
                 results.push({
                     name: player.name,
                     status: isCorrect ? 'correct' : 'wrong',
@@ -882,143 +809,92 @@
                     explanation: explanation
                 });
             });
-            
-            // Display results
+
+            // Play correct/wrong sound
+            const anyCorrect = results.some(r => r.correct);
+            playSound(anyCorrect ? 'correct' : 'wrong');
+
+            // Display results in dashboard
             displayResults(results, correctAnswer);
-            
-            // Notify players
-            broadcastToPlayers({
-                type: 'reveal',
-                correctAnswer: correctAnswer,
-                results: results
-            });
-            
-            updatePlayersList();
-            updatePlayerCount();
-            
+
+            const alive = Array.from(players.values()).filter(p => p.alive).length;
+
+            broadcastToPlayers({ type: 'reveal', correctAnswer: correctAnswer, results: results });
+            sendToDisplay({ type: 'reveal', correctAnswer: correctAnswer, activePlayers: alive });
+
+            updateUI();
+
             document.getElementById('revealBtn').disabled = true;
             document.getElementById('nextBtn').disabled = false;
         }
 
         function displayResults(results, correctAnswer) {
-            const resultsEl = document.getElementById('resultsDisplay');
+            document.getElementById('resultsCard').style.display = 'block';
             const listEl = document.getElementById('resultsList');
-            
-            resultsEl.style.display = 'block';
             listEl.innerHTML = '';
-            
-            const correctAnswerText = String.fromCharCode(65 + correctAnswer);
-            const headerDiv = document.createElement('div');
-            headerDiv.style.cssText = 'text-align: center; margin-bottom: 20px; padding: 15px; background: rgba(76, 175, 80, 0.2); border-radius: 8px;';
-            headerDiv.innerHTML = `<strong style="color: #4caf50; font-size: 20px;">Richtige Antwort: ${correctAnswerText}</strong>`;
-            listEl.appendChild(headerDiv);
-            
+
             results.forEach(result => {
+                if (result.status === 'dead') return; // Skip already-dead
                 const div = document.createElement('div');
-                div.className = `result-item ${result.correct ? 'correct' : 'wrong'}`;
-                
-                let statusIcon = '';
-                if (result.status === 'dead') statusIcon = '☠️ Bereits raus';
-                else if (result.status === 'timeout') statusIcon = '⏰ Zeit abgelaufen';
-                else if (result.correct) statusIcon = '✓ Richtig';
-                else statusIcon = '✗ Falsch';
-                
-                div.innerHTML = `
-                    <span><strong>${result.name}</strong> - Antwort: ${result.answer} ${result.explanation || ''}</span>
-                    <span>${statusIcon}</span>
-                `;
+                div.className = `result-row ${result.correct ? 'correct' : 'wrong'}`;
+                let icon = result.status === 'timeout' ? '⏰' : (result.correct ? '✓' : '✗');
+                div.innerHTML = `<span><strong>${result.name}</strong> → ${result.answer} ${result.explanation || ''}</span><span>${icon}</span>`;
                 listEl.appendChild(div);
             });
         }
 
         function nextQuestion() {
             currentQuestionIndex++;
-            
-            // Check if there are still players alive
-            const alivePlayers = Array.from(players.values()).filter(p => p.alive).length;
-            
-            if (alivePlayers === 0) {
-                endGame();
-            } else {
-                loadQuestion();
-            }
+            const alive = Array.from(players.values()).filter(p => p.alive).length;
+            if (alive === 0) endGame();
+            else loadQuestion();
         }
 
         function endGame() {
             const winners = Array.from(players.values()).filter(p => p.alive);
-            
-            const winnerDiv = document.createElement('div');
-            winnerDiv.className = 'winner-display';
-            
-            if (winners.length > 0) {
-                const prize = prizeLevels[Math.min(currentQuestionIndex, prizeLevels.length - 1)];
-                winnerDiv.innerHTML = `
-                    <h2>🎉 Gewinner! 🎉</h2>
-                    <p style="font-size: 24px; margin: 20px 0;">
-                        ${winners.map(w => w.name).join(', ')}
-                    </p>
-                    <p style="font-size: 32px; font-weight: bold;">Gewinn: ${prize}</p>
-                `;
-            } else {
-                winnerDiv.innerHTML = `
-                    <h2>Spiel beendet</h2>
-                    <p style="font-size: 24px;">Leider hat es niemand bis zum Ende geschafft!</p>
-                `;
-            }
-            
-            document.getElementById('questionDisplay').innerHTML = '';
-            document.getElementById('answersDisplay').innerHTML = '';
-            document.getElementById('questionDisplay').appendChild(winnerDiv);
-            
-            // Show statistics
-            const stats = calculateStats();
-            displayStats(stats);
-            
+            const prize = winners.length > 0 ? prizeLevels[Math.min(currentQuestionIndex, prizeLevels.length - 1)] : null;
+
+            playSound(winners.length > 0 ? 'win' : 'outro');
+
+            // Update dashboard
+            document.getElementById('dashQuestion').textContent = winners.length > 0
+                ? `🎉 Gewinner: ${winners.map(w => w.name).join(', ')} — ${prize}`
+                : 'Spiel beendet — Niemand hat es geschafft!';
+            document.getElementById('dashAnswers').innerHTML = '';
+            document.getElementById('revealBtn').disabled = true;
+            document.getElementById('nextBtn').disabled = true;
+
+            const stats = {
+                totalPlayers: players.size,
+                survivors: winners.length,
+                questionsAsked: currentQuestionIndex
+            };
+
             broadcastToPlayers({
                 type: 'gameEnd',
                 winners: winners.map(w => w.name),
-                prize: winners.length > 0 ? prizeLevels[Math.min(currentQuestionIndex, prizeLevels.length - 1)] : null
+                prize: prize
             });
-            
-            document.getElementById('revealBtn').disabled = true;
-            document.getElementById('nextBtn').disabled = true;
+
+            sendToDisplay({
+                type: 'gameEnd',
+                winners: winners.map(w => w.name),
+                prize: prize,
+                totalPlayers: stats.totalPlayers,
+                survivors: stats.survivors,
+                questionsAsked: stats.questionsAsked
+            });
         }
 
-        function calculateStats() {
-            return {
-                totalPlayers: players.size,
-                survivors: Array.from(players.values()).filter(p => p.alive).length,
-                questionsAsked: currentQuestionIndex
-            };
-        }
-
-        function displayStats(stats) {
-            const statsDiv = document.createElement('div');
-            statsDiv.className = 'stats-display';
-            statsDiv.innerHTML = `
-                <div class="stat-card">
-                    <div class="value">${stats.totalPlayers}</div>
-                    <div class="label">Teilnehmer</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value">${stats.survivors}</div>
-                    <div class="label">Überlebende</div>
-                </div>
-                <div class="stat-card">
-                    <div class="value">${stats.questionsAsked}</div>
-                    <div class="label">Fragen gestellt</div>
-                </div>
-            `;
-            
-            document.getElementById('resultsDisplay').appendChild(statsDiv);
-        }
-
-        // Event Listeners
+        // ===== EVENT LISTENERS =====
         document.getElementById('startGameBtn').addEventListener('click', startGame);
         document.getElementById('revealBtn').addEventListener('click', revealAnswer);
         document.getElementById('nextBtn').addEventListener('click', nextQuestion);
-        
-        // Initialize
+        document.getElementById('openDisplayBtn').addEventListener('click', () => {
+            window.open('display.html', 'wwm-display', 'width=1920,height=1080');
+        });
+
+        // ===== INIT =====
         initPeer();
     </script>
 </body>
