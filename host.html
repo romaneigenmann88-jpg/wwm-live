@@ -131,6 +131,11 @@
             font-weight: 600;
         }
         .open-display-btn:hover { background: #2ea043; }
+        .top-bar .open-display-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            margin: 0 0 0 12px;
+        }
 
         /* --- Buttons --- */
         .btn {
@@ -307,6 +312,7 @@
             <span><span class="dot green" id="peerDot"></span> <span id="peerStatus">Verbinde...</span></span>
             <span>Spieler: <strong id="topPlayerCount">0</strong></span>
             <span>Aktiv: <strong id="topAlivePlayers">0</strong></span>
+            <button class="open-display-btn" id="topOpenDisplayBtn">📺 Beamer öffnen</button>
         </div>
     </div>
 
@@ -895,9 +901,12 @@
         document.getElementById('startGameBtn').addEventListener('click', startGame);
         document.getElementById('revealBtn').addEventListener('click', revealAnswer);
         document.getElementById('nextBtn').addEventListener('click', nextQuestion);
-        document.getElementById('openDisplayBtn').addEventListener('click', () => {
+        document.getElementById('openDisplayBtn').addEventListener('click', openDisplayWindow);
+        document.getElementById('topOpenDisplayBtn').addEventListener('click', openDisplayWindow);
+
+        function openDisplayWindow() {
             window.open('display.html', 'wwm-display', 'width=1920,height=1080');
-        });
+        }
 
         // ===== INIT =====
         initPeer();
