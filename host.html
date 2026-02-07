@@ -695,30 +695,35 @@
 
             const alive = Array.from(players.values()).filter(p => p.alive).length;
 
-            // Broadcast to players
-            const alivePlayers = Array.from(players.values())
-                .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
-
-            broadcastToPlayers({
-                type: 'question', questionNumber: currentQuestionIndex + 1,
-                question: q.question, answers: q.answers,
-                prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers
-            });
-
-            // Send to display
+            // Send to display FIRST (animation takes ~3s)
             sendToDisplay({
                 type: 'question', questionNumber: currentQuestionIndex + 1,
                 question: q.question, answers: q.answers,
                 prize: prizeLevels[currentQuestionIndex], activePlayers: alive
             });
 
-            updateUI();
-            startTimer();
-
             // Auto-play level music
             if (currentQuestionIndex < 5) playSound('lvl1');
             else if (currentQuestionIndex < 10) playSound('lvl2');
             else playSound('lvl3');
+
+            // Delay sending to players + starting timer to sync with display animation
+            // Display animation: 600ms * (4 answers + 1) = 3000ms
+            const animationDelay = 600 * (q.answers.length + 1);
+
+            setTimeout(() => {
+                const alivePlayers = Array.from(players.values())
+                    .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
+
+                broadcastToPlayers({
+                    type: 'question', questionNumber: currentQuestionIndex + 1,
+                    question: q.question, answers: q.answers,
+                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers
+                });
+
+                updateUI();
+                startTimer();
+            }, animationDelay);
         }
 
         function startTimer() {
