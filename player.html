@@ -671,6 +671,45 @@
             document.getElementById('phoneBtn').disabled = !jokers.phone || !isAlive;
         }
 
+        function parsePrize(str) {
+            return parseInt(str.replace(/[^0-9]/g, ''));
+        }
+
+        function calculateScore() {
+            const correctCount = myResults.filter(r => r.correct).length;
+            const wrongCount = myResults.filter(r => !r.correct).length;
+
+            // Find highest correctly answered level
+            let highestCorrectLevel = 0;
+            myResults.forEach(r => {
+                if (r.correct && r.questionNum > highestCorrectLevel) {
+                    highestCorrectLevel = r.questionNum;
+                }
+            });
+
+            const highestPrize = highestCorrectLevel > 0 ? parsePrize(prizeLevels[highestCorrectLevel - 1]) : 0;
+
+            // Subtract wrong answers' prize values from highest
+            let totalDeductions = 0;
+            myResults.forEach(r => {
+                if (!r.correct) {
+                    totalDeductions += parsePrize(prizeLevels[r.questionNum - 1]);
+                }
+            });
+
+            const finalScore = highestPrize - totalDeductions;
+
+            return {
+                correctCount,
+                wrongCount,
+                highestPrize,
+                totalDeductions,
+                finalScore,
+                formattedScore: '€ ' + finalScore.toLocaleString('de-CH'),
+                formattedHighest: '€ ' + highestPrize.toLocaleString('de-CH')
+            };
+        }
+
         function buildMyLadder() {
             const listEl = document.getElementById('myLadderList');
             listEl.innerHTML = '';
@@ -705,26 +744,14 @@
             });
 
             // Update summary
-            const correctCount = myResults.filter(r => r.correct).length;
-            const aliveCorrectCount = myResults.filter(r => r.correct && r.wasAlive).length;
-            const redModeCorrectCount = myResults.filter(r => r.correct && !r.wasAlive).length;
             const summaryEl = document.getElementById('myLadderSummary');
             if (myResults.length > 0) {
-                // Calculate prize: only count answers while alive
-                let totalPrize = 0;
-                myResults.forEach(r => {
-                    if (r.correct && r.wasAlive) {
-                        const prizeStr = prizeLevels[r.questionNum - 1];
-                        const num = parseInt(prizeStr.replace(/[^0-9]/g, ''));
-                        totalPrize += num;
-                    }
-                });
-                const formattedPrize = '€ ' + totalPrize.toLocaleString('de-CH');
-                let summaryHtml = `${correctCount} / ${myResults.length} richtig`;
-                if (redModeCorrectCount > 0) {
-                    summaryHtml += `<div style="font-size:11px;color:#f44336;">(${redModeCorrectCount} davon im roten Modus)</div>`;
+                const stats = calculateScore();
+                let summaryHtml = `${stats.correctCount} / ${myResults.length} richtig`;
+                summaryHtml += `<div class="total-prize">${stats.formattedScore}</div>`;
+                if (stats.wrongCount > 0) {
+                    summaryHtml += `<div style="font-size:10px;color:#f44336;">Höchste Stufe ${stats.formattedHighest} − ${stats.wrongCount} Abzüge</div>`;
                 }
-                summaryHtml += `<div class="total-prize">${formattedPrize}</div>`;
                 summaryEl.innerHTML = summaryHtml;
             }
         }
@@ -971,18 +998,8 @@
             const gameScreen = document.getElementById('gameScreen');
             gameScreen.innerHTML = '';
 
-            // Calculate personal stats (only count prize money while alive)
-            const correctCount = myResults.filter(r => r.correct).length;
-            const aliveCorrectCount = myResults.filter(r => r.correct && r.wasAlive).length;
-            const redModeCorrectCount = myResults.filter(r => r.correct && !r.wasAlive).length;
-            let totalPrize = 0;
-            myResults.forEach(r => {
-                if (r.correct && r.wasAlive) {
-                    const prizeStr = prizeLevels[r.questionNum - 1];
-                    totalPrize += parseInt(prizeStr.replace(/[^0-9]/g, ''));
-                }
-            });
-            const formattedPrize = '€ ' + totalPrize.toLocaleString('de-CH');
+            // Calculate personal stats
+            const stats = calculateScore();
 
             const isWinner = data.winners && data.winners.includes(playerName);
 
@@ -1004,12 +1021,9 @@
             // Personal summary
             html += `<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.1);">`;
             html += `<p style="font-size: 16px; color: #a0c4ff; margin-bottom: 10px;">Deine Zusammenfassung</p>`;
-            html += `<p style="font-size: 24px; font-weight: bold; color: #ffd700;">${correctCount} von ${myResults.length} richtig</p>`;
-            if (redModeCorrectCount > 0) {
-                html += `<p style="font-size: 14px; color: #f44336; margin-top: 4px;">(${redModeCorrectCount} davon im roten Modus)</p>`;
-            }
-            html += `<p style="font-size: 28px; font-weight: bold; color: #ffd700; margin-top: 8px;">${formattedPrize}</p>`;
-            html += `<p style="font-size: 12px; color: #8892b0; margin-top: 4px;">Gewinn (nur Fragen vor dem Ausscheiden)</p>`;
+            html += `<p style="font-size: 24px; font-weight: bold; color: #ffd700;">${stats.correctCount} von ${myResults.length} richtig</p>`;
+            html += `<p style="font-size: 36px; font-weight: bold; color: ${stats.finalScore >= 0 ? '#ffd700' : '#f44336'}; margin-top: 8px;">${stats.formattedScore}</p>`;
+            html += `<p style="font-size: 12px; color: #8892b0; margin-top: 4px;">Höchste Stufe ${stats.formattedHighest} − ${stats.wrongCount} Abzüge</p>`;
             html += `</div>`;
 
             // Mini ladder review

@@ -412,21 +412,24 @@
     <script>
         // ===== QUESTIONS =====
         const questions = [
-            { question: "Welche Farbe hat ein Smaragd?", answers: ["Rot", "Grün", "Blau", "Gelb"], correct: 1 },
-            { question: "Wie viele Beine hat eine Spinne?", answers: ["6", "8", "10", "12"], correct: 1 },
-            { question: "Welcher Planet ist der Sonne am nächsten?", answers: ["Venus", "Merkur", "Mars", "Erde"], correct: 1 },
-            { question: "In welchem Jahr fiel die Berliner Mauer?", answers: ["1987", "1989", "1991", "1993"], correct: 1 },
-            { question: "Wie heisst die Hauptstadt von Australien?", answers: ["Sydney", "Melbourne", "Canberra", "Brisbane"], correct: 2 },
-            { question: "Welches chemische Element hat das Symbol 'Au'?", answers: ["Silber", "Gold", "Aluminium", "Kupfer"], correct: 1 },
-            { question: "Wie viele Spieler hat eine Fussballmannschaft auf dem Feld?", answers: ["9", "10", "11", "12"], correct: 2 },
-            { question: "Wer schrieb 'Romeo und Julia'?", answers: ["Charles Dickens", "William Shakespeare", "Mark Twain", "Jane Austen"], correct: 1 },
-            { question: "Welcher Ozean ist der grösste?", answers: ["Atlantik", "Indischer Ozean", "Pazifik", "Arktischer Ozean"], correct: 2 },
-            { question: "In welchem Jahr wurde die Schweiz gegründet?", answers: ["1291", "1315", "1499", "1648"], correct: 0 },
-            { question: "Wie viele Herzen hat ein Oktopus?", answers: ["1", "2", "3", "4"], correct: 2 },
-            { question: "Welches ist der längste Fluss der Welt?", answers: ["Amazonas", "Nil", "Mississippi", "Jangtse"], correct: 1 },
-            { question: "Wer entwickelte die Relativitätstheorie?", answers: ["Isaac Newton", "Albert Einstein", "Stephen Hawking", "Niels Bohr"], correct: 1 },
-            { question: "Wie viele Knochen hat ein erwachsener Mensch?", answers: ["186", "206", "226", "246"], correct: 1 },
-            { question: "In welchem Land steht der Eiffelturm?", answers: ["Italien", "Spanien", "Frankreich", "Deutschland"], correct: 2 }
+            // Stufe 1-5: Einfach
+            { question: "Wie heisst das grösste Tier der Welt?", answers: ["Elefant", "Blauwal", "Giraffe", "Weisser Hai"], correct: 1 },
+            { question: "Welche Frucht ist auf dem Logo von Apple?", answers: ["Birne", "Kirsche", "Apfel", "Banane"], correct: 2 },
+            { question: "Wie viele Minuten hat eine Stunde?", answers: ["30", "60", "90", "120"], correct: 1 },
+            { question: "In welchem Land steht das Kolosseum?", answers: ["Griechenland", "Italien", "Spanien", "Türkei"], correct: 1 },
+            { question: "Welches Gas atmen Menschen ein, um zu überleben?", answers: ["Stickstoff", "Helium", "Sauerstoff", "CO2"], correct: 2 },
+            // Stufe 6-10: Mittel
+            { question: "Wie viele Bundesräte hat die Schweiz?", answers: ["5", "7", "9", "4"], correct: 1 },
+            { question: "Welcher Musiker war bekannt als 'King of Pop'?", answers: ["Elvis Presley", "Prince", "Michael Jackson", "Freddie Mercury"], correct: 2 },
+            { question: "Welches Land hat die meisten Einwohner?", answers: ["USA", "Indien", "China", "Indonesien"], correct: 1 },
+            { question: "Wie heisst die Währung von Japan?", answers: ["Won", "Yuan", "Yen", "Baht"], correct: 2 },
+            { question: "Welcher Wissenschaftler entdeckte die Schwerkraft mit einem Apfel?", answers: ["Galileo Galilei", "Isaac Newton", "Albert Einstein", "Nikola Tesla"], correct: 1 },
+            // Stufe 11-15: Schwer
+            { question: "Wie heisst der höchste Berg der Schweiz?", answers: ["Matterhorn", "Eiger", "Dufourspitze", "Jungfrau"], correct: 2 },
+            { question: "Welches Tier kann seinen Kopf um fast 360 Grad drehen?", answers: ["Chamäleon", "Eule", "Katze", "Papagei"], correct: 1 },
+            { question: "In welchem Jahr wurde das erste iPhone vorgestellt?", answers: ["2005", "2006", "2007", "2008"], correct: 2 },
+            { question: "Wie viele Zeitzonen gibt es auf der Erde?", answers: ["12", "18", "24", "36"], correct: 2 },
+            { question: "Welches Element hat die Ordnungszahl 1 im Periodensystem?", answers: ["Helium", "Wasserstoff", "Lithium", "Sauerstoff"], correct: 1 }
         ];
 
         const prizeLevels = [
