@@ -282,6 +282,10 @@
         .my-ladder-item.my-pending {
             opacity: 0.4;
         }
+        .my-ladder-item.my-redmode {
+            opacity: 0.5;
+            border-left-style: dashed;
+        }
         .my-ladder-item .ml-num { min-width: 22px; font-weight: bold; }
         .my-ladder-item .ml-prize { color: #ffd700; }
         .my-ladder-item .ml-icon { font-size: 14px; }
@@ -687,8 +691,10 @@
                 item.classList.remove('my-correct', 'my-wrong', 'my-current', 'my-pending');
 
                 const result = myResults.find(r => r.questionNum === level + 1);
+                item.classList.remove('my-redmode');
                 if (result) {
                     item.classList.add(result.correct ? 'my-correct' : 'my-wrong');
+                    if (!result.wasAlive) item.classList.add('my-redmode');
                     item.querySelector('.ml-icon').textContent = result.correct ? '✓' : '✗';
                 } else if (currentQuestion && level + 1 === currentQuestion.questionNumber) {
                     item.classList.add('my-current');
@@ -700,20 +706,26 @@
 
             // Update summary
             const correctCount = myResults.filter(r => r.correct).length;
+            const aliveCorrectCount = myResults.filter(r => r.correct && r.wasAlive).length;
+            const redModeCorrectCount = myResults.filter(r => r.correct && !r.wasAlive).length;
             const summaryEl = document.getElementById('myLadderSummary');
             if (myResults.length > 0) {
-                // Calculate total prize earned (sum of correct answers' prize values)
+                // Calculate prize: only count answers while alive
                 let totalPrize = 0;
                 myResults.forEach(r => {
-                    if (r.correct) {
-                        // Parse prize string to number
+                    if (r.correct && r.wasAlive) {
                         const prizeStr = prizeLevels[r.questionNum - 1];
                         const num = parseInt(prizeStr.replace(/[^0-9]/g, ''));
                         totalPrize += num;
                     }
                 });
                 const formattedPrize = '€ ' + totalPrize.toLocaleString('de-CH');
-                summaryEl.innerHTML = `${correctCount} / ${myResults.length} richtig<div class="total-prize">${formattedPrize}</div>`;
+                let summaryHtml = `${correctCount} / ${myResults.length} richtig`;
+                if (redModeCorrectCount > 0) {
+                    summaryHtml += `<div style="font-size:11px;color:#f44336;">(${redModeCorrectCount} davon im roten Modus)</div>`;
+                }
+                summaryHtml += `<div class="total-prize">${formattedPrize}</div>`;
+                summaryEl.innerHTML = summaryHtml;
             }
         }
 
@@ -898,7 +910,8 @@
                 questionNum: currentQuestion.questionNumber,
                 correct: wasCorrect,
                 myAnswer: selectedAnswer,
-                correctAnswer: correctAnswer
+                correctAnswer: correctAnswer,
+                wasAlive: isAlive  // track if answered while still in the game
             });
 
             // Update personal ladder
@@ -958,11 +971,13 @@
             const gameScreen = document.getElementById('gameScreen');
             gameScreen.innerHTML = '';
 
-            // Calculate personal stats
+            // Calculate personal stats (only count prize money while alive)
             const correctCount = myResults.filter(r => r.correct).length;
+            const aliveCorrectCount = myResults.filter(r => r.correct && r.wasAlive).length;
+            const redModeCorrectCount = myResults.filter(r => r.correct && !r.wasAlive).length;
             let totalPrize = 0;
             myResults.forEach(r => {
-                if (r.correct) {
+                if (r.correct && r.wasAlive) {
                     const prizeStr = prizeLevels[r.questionNum - 1];
                     totalPrize += parseInt(prizeStr.replace(/[^0-9]/g, ''));
                 }
@@ -990,8 +1005,11 @@
             html += `<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.1);">`;
             html += `<p style="font-size: 16px; color: #a0c4ff; margin-bottom: 10px;">Deine Zusammenfassung</p>`;
             html += `<p style="font-size: 24px; font-weight: bold; color: #ffd700;">${correctCount} von ${myResults.length} richtig</p>`;
+            if (redModeCorrectCount > 0) {
+                html += `<p style="font-size: 14px; color: #f44336; margin-top: 4px;">(${redModeCorrectCount} davon im roten Modus)</p>`;
+            }
             html += `<p style="font-size: 28px; font-weight: bold; color: #ffd700; margin-top: 8px;">${formattedPrize}</p>`;
-            html += `<p style="font-size: 12px; color: #8892b0; margin-top: 4px;">Summe aller richtigen Antworten</p>`;
+            html += `<p style="font-size: 12px; color: #8892b0; margin-top: 4px;">Gewinn (nur Fragen vor dem Ausscheiden)</p>`;
             html += `</div>`;
 
             // Mini ladder review
@@ -999,8 +1017,9 @@
             myResults.forEach(r => {
                 const icon = r.correct ? '✓' : '✗';
                 const color = r.correct ? '#4caf50' : '#f44336';
-                html += `<div style="display:flex; justify-content:space-between; padding:4px 8px; margin:2px 0; border-radius:4px; background:rgba(255,255,255,0.05);">
-                    <span>Frage ${r.questionNum}: ${prizeLevels[r.questionNum - 1]}</span>
+                const redTag = !r.wasAlive ? ' <span style="color:#f44336;font-size:10px;">(rot)</span>' : '';
+                html += `<div style="display:flex; justify-content:space-between; padding:4px 8px; margin:2px 0; border-radius:4px; background:rgba(255,255,255,0.05); ${!r.wasAlive ? 'opacity:0.6;' : ''}">
+                    <span>Frage ${r.questionNum}: ${prizeLevels[r.questionNum - 1]}${redTag}</span>
                     <span style="color:${color}; font-weight:bold;">${icon}</span>
                 </div>`;
             });

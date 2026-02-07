@@ -391,7 +391,7 @@
 
                 updateLadder(data.questionNumber - 1);
 
-                // Build answer buttons (hidden first, then reveal one by one)
+                // Build answer buttons
                 const answersEl = document.getElementById('displayAnswers');
                 answersEl.innerHTML = '';
                 data.answers.forEach((answer, idx) => {
@@ -402,16 +402,25 @@
                     answersEl.appendChild(div);
                 });
 
-                // Reveal answers one by one like the original show
-                data.answers.forEach((_, idx) => {
-                    setTimeout(() => {
+                if (data.instant) {
+                    // Instant mode: show all answers immediately (for re-sync)
+                    data.answers.forEach((_, idx) => {
                         const el = document.getElementById('displayAnswer' + idx);
                         if (el) el.classList.add('visible');
-                    }, 600 * (idx + 1));
-                });
+                    });
+                    // Don't start timer on instant sync (host timer is already running)
+                } else {
+                    // Normal mode: reveal answers one by one like the original show
+                    data.answers.forEach((_, idx) => {
+                        setTimeout(() => {
+                            const el = document.getElementById('displayAnswer' + idx);
+                            if (el) el.classList.add('visible');
+                        }, 600 * (idx + 1));
+                    });
 
-                // Start local timer after all answers are visible
-                setTimeout(() => startDisplayTimer(), 600 * (data.answers.length + 1));
+                    // Start local timer after all answers are visible
+                    setTimeout(() => startDisplayTimer(), 600 * (data.answers.length + 1));
+                }
             }
 
             if (data.type === 'timerStop') {
@@ -485,6 +494,9 @@
             timerEl.classList.remove('warning');
             timerEl.textContent = '—';
         }
+
+        // Request current state from host (in case display is opened mid-game)
+        channel.postMessage({ type: 'requestSync' });
     </script>
 </body>
 </html>

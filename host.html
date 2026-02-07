@@ -447,9 +447,55 @@
         // ===== BROADCAST CHANNEL (to display.html) =====
         const displayChannel = new BroadcastChannel('wwm-live');
 
+        // Track current display state for re-sync
+        let displayState = { phase: 'waiting' }; // waiting, game, gameEnd
+
         function sendToDisplay(msg) {
+            // Track state for sync when display reopens
+            if (msg.type === 'joinUrl') {
+                displayState.joinUrl = msg.url;
+            }
+            if (msg.type === 'gameStart') {
+                displayState.phase = 'game';
+            }
+            if (msg.type === 'question') {
+                displayState.currentQuestion = msg;
+            }
+            if (msg.type === 'reveal') {
+                displayState.lastReveal = msg;
+            }
+            if (msg.type === 'gameEnd') {
+                displayState.phase = 'gameEnd';
+                displayState.gameEndData = msg;
+            }
             displayChannel.postMessage(msg);
         }
+
+        // Listen for sync requests from display
+        displayChannel.onmessage = function(event) {
+            if (event.data && event.data.type === 'requestSync') {
+                // Send full current state to display
+                if (displayState.joinUrl) {
+                    displayChannel.postMessage({ type: 'joinUrl', url: displayState.joinUrl });
+                }
+                const count = players.size;
+                displayChannel.postMessage({ type: 'playerCount', count: count });
+
+                if (displayState.phase === 'game') {
+                    displayChannel.postMessage({ type: 'gameStart' });
+                    if (displayState.currentQuestion) {
+                        // Send question with instant flag (no animation delay needed)
+                        displayChannel.postMessage(Object.assign({}, displayState.currentQuestion, { instant: true }));
+                    }
+                    if (displayState.lastReveal) {
+                        displayChannel.postMessage(displayState.lastReveal);
+                    }
+                } else if (displayState.phase === 'gameEnd' && displayState.gameEndData) {
+                    displayChannel.postMessage({ type: 'gameStart' });
+                    displayChannel.postMessage(displayState.gameEndData);
+                }
+            }
+        };
 
         // ===== SOUND SYSTEM =====
         const sounds = {};
