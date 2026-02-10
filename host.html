@@ -333,6 +333,13 @@
                     <div style="margin-top: 20px;">
                         <button class="btn green" id="startGameBtn" disabled>▶ Spiel starten</button>
                     </div>
+                    <div style="margin-top: 20px;">
+                        <button class="btn" id="debugToggle" style="background:#333;font-size:12px;" onclick="document.getElementById('debugPanel').style.display = document.getElementById('debugPanel').style.display === 'none' ? 'block' : 'none';">Netzwerk-Diagnose anzeigen</button>
+                        <div id="debugPanel" style="display:none; margin-top:10px;">
+                            <pre id="debugLog" style="background:#0a0a0a; border:1px solid #30363d; border-radius:6px; padding:10px; font-size:11px; max-height:200px; overflow-y:auto; color:#8b949e; text-align:left; white-space:pre-wrap;"></pre>
+                            <button class="btn" style="background:#333;font-size:11px;margin-top:6px;" onclick="runNetworkTest();">Netzwerk-Test starten</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -548,31 +555,155 @@
         });
 
         // ===== PEERJS =====
+        function logDebug(msg) {
+            console.log('[WWM Debug]', msg);
+            const el = document.getElementById('debugLog');
+            if (el) {
+                const time = new Date().toLocaleTimeString('de-CH');
+                el.textContent += `[${time}] ${msg}\n`;
+                el.scrollTop = el.scrollHeight;
+            }
+        }
+
         function initPeer() {
-            peer = new Peer();
+            logDebug('PeerJS wird initialisiert...');
+            peer = new Peer(null, {
+                debug: 2,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun.relay.metered.ca:80' },
+                        { urls: 'turn:global.relay.metered.ca:80', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' },
+                        { urls: 'turn:global.relay.metered.ca:443', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' },
+                        { urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' }
+                    ]
+                }
+            });
 
             peer.on('open', function(id) {
                 hostId = id;
+                logDebug('Peer-ID erhalten: ' + id);
+                logDebug('PeerJS Cloud-Server erreichbar!');
                 document.getElementById('peerStatus').textContent = 'Verbunden';
                 document.getElementById('peerDot').className = 'dot green';
                 generateJoinUrl(id);
             });
 
             peer.on('connection', function(conn) {
+                logDebug('Eingehende Verbindung von: ' + conn.peer);
                 conn.on('open', function() {
+                    logDebug('Verbindung offen mit: ' + conn.peer);
                     conn.on('data', function(data) {
+                        logDebug('Daten empfangen von ' + conn.peer + ': ' + data.type);
                         handlePlayerMessage(conn, data);
                     });
                 });
                 conn.on('close', function() {
+                    logDebug('Verbindung geschlossen: ' + conn.peer);
                     removePlayer(conn.peer);
+                });
+                conn.on('error', function(err) {
+                    logDebug('Verbindungsfehler mit ' + conn.peer + ': ' + err);
                 });
             });
 
             peer.on('error', function(err) {
-                document.getElementById('peerStatus').textContent = 'Fehler';
+                logDebug('FEHLER: ' + err.type + ' - ' + err.message);
+                document.getElementById('peerStatus').textContent = 'Fehler: ' + err.type;
                 document.getElementById('peerDot').className = 'dot red';
             });
+
+            peer.on('disconnected', function() {
+                logDebug('Vom PeerJS-Server getrennt! Versuche Reconnect...');
+                peer.reconnect();
+            });
+        }
+
+        async function runNetworkTest() {
+            logDebug('=== NETZWERK-DIAGNOSE START ===');
+
+            // Test 1: Internet
+            try {
+                const r = await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
+                logDebug('1. Internet: OK');
+            } catch(e) {
+                logDebug('1. Internet: FEHLER - ' + e.message);
+            }
+
+            // Test 2: PeerJS Cloud Server
+            try {
+                const r = await fetch('https://0.peerjs.com/', { cache: 'no-store' });
+                logDebug('2. PeerJS-Server: OK (Status ' + r.status + ')');
+            } catch(e) {
+                logDebug('2. PeerJS-Server: FEHLER - ' + e.message);
+            }
+
+            // Test 3: STUN
+            try {
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                pc.createDataChannel('test');
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => { reject(new Error('Timeout')); }, 5000);
+                    pc.onicecandidate = (e) => {
+                        if (e.candidate && e.candidate.candidate.indexOf('srflx') !== -1) {
+                            clearTimeout(timeout);
+                            resolve(e.candidate);
+                        }
+                    };
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'complete') {
+                            clearTimeout(timeout);
+                            reject(new Error('Kein STUN-Kandidat gefunden'));
+                        }
+                    };
+                });
+                logDebug('3. STUN (Google): OK - Oeffentliche IP erreichbar');
+                pc.close();
+            } catch(e) {
+                logDebug('3. STUN (Google): FEHLER - ' + e.message);
+                logDebug('   -> WebRTC wird evtl. blockiert!');
+            }
+
+            // Test 4: TURN
+            try {
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' }] });
+                pc.createDataChannel('test');
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => { reject(new Error('Timeout')); }, 5000);
+                    pc.onicecandidate = (e) => {
+                        if (e.candidate && e.candidate.candidate.indexOf('relay') !== -1) {
+                            clearTimeout(timeout);
+                            resolve(e.candidate);
+                        }
+                    };
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'complete') {
+                            clearTimeout(timeout);
+                            reject(new Error('Kein TURN-Relay gefunden'));
+                        }
+                    };
+                });
+                logDebug('4. TURN-Server: OK - Relay-Verbindung moeglich');
+                pc.close();
+            } catch(e) {
+                logDebug('4. TURN-Server: FEHLER - ' + e.message);
+            }
+
+            // Test 5: Peer Status
+            if (peer) {
+                logDebug('5. Peer-Status: ' + (peer.open ? 'OFFEN' : peer.destroyed ? 'ZERSTOERT' : peer.disconnected ? 'GETRENNT' : 'UNBEKANNT'));
+                if (hostId) logDebug('   Host-ID: ' + hostId);
+            } else {
+                logDebug('5. Peer: Nicht initialisiert!');
+            }
+
+            logDebug('=== NETZWERK-DIAGNOSE ENDE ===');
         }
 
         function generateJoinUrl(id) {

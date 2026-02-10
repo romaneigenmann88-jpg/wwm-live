@@ -544,19 +544,53 @@
         }
 
         function initPeer() {
-            peer = new Peer();
+            console.log('[WWM] PeerJS wird initialisiert...');
+            peer = new Peer(null, {
+                debug: 2,
+                config: {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun.relay.metered.ca:80' },
+                        { urls: 'turn:global.relay.metered.ca:80', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' },
+                        { urls: 'turn:global.relay.metered.ca:443', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' },
+                        { urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' }
+                    ]
+                }
+            });
 
             peer.on('open', function(id) {
-                console.log('Player ID:', id);
+                console.log('[WWM] Player Peer-ID:', id);
+            });
+
+            peer.on('error', function(err) {
+                console.error('[WWM] Peer-Fehler:', err.type, err.message);
+                document.getElementById('joinStatus').textContent = 'Peer-Fehler: ' + err.type + '. Seite neu laden.';
+            });
+
+            peer.on('disconnected', function() {
+                console.log('[WWM] Vom Server getrennt, reconnecting...');
+                peer.reconnect();
             });
         }
 
         function connectToHost() {
-            hostConnection = peer.connect(hostId);
+            console.log('[WWM] Verbinde mit Host:', hostId);
+            document.getElementById('joinStatus').textContent = 'Verbinde...';
+            hostConnection = peer.connect(hostId, { reliable: true });
+
+            const connectTimeout = setTimeout(function() {
+                if (!hostConnection || !hostConnection.open) {
+                    console.error('[WWM] Verbindung Timeout nach 10s');
+                    document.getElementById('joinStatus').textContent = 'Verbindung Timeout. Bitte Seite neu laden und erneut versuchen.';
+                }
+            }, 10000);
 
             hostConnection.on('open', function() {
-                console.log('Connected to host');
-                
+                clearTimeout(connectTimeout);
+                console.log('[WWM] Verbindung zum Host offen!');
+
                 hostConnection.send({
                     type: 'join',
                     name: playerName
@@ -572,8 +606,9 @@
             });
 
             hostConnection.on('error', function(err) {
-                console.error('Connection error:', err);
-                document.getElementById('joinStatus').textContent = 'Verbindung fehlgeschlagen. Bitte erneut versuchen.';
+                clearTimeout(connectTimeout);
+                console.error('[WWM] Connection error:', err);
+                document.getElementById('joinStatus').textContent = 'Verbindung fehlgeschlagen: ' + (err.type || err.message || 'Unbekannt') + '. Seite neu laden.';
             });
         }
 
