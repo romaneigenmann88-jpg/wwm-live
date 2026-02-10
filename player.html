@@ -435,6 +435,10 @@
             <input type="text" id="playerName" placeholder="Dein Name" maxlength="20">
             <button class="btn" id="joinBtn">Beitreten</button>
             <p id="joinStatus" style="margin-top: 15px; color: #ff6f00;"></p>
+            <div style="margin-top: 30px;">
+                <button style="background:none;border:1px solid #333;color:#666;padding:6px 12px;border-radius:6px;font-size:11px;cursor:pointer;" onclick="runPlayerDiag()">Netzwerk-Diagnose</button>
+                <pre id="playerDebugLog" style="display:none; background:#0a0a0a; border:1px solid #30363d; border-radius:6px; padding:8px; font-size:10px; max-height:200px; overflow-y:auto; color:#8b949e; text-align:left; white-space:pre-wrap; margin-top:8px;"></pre>
+            </div>
         </div>
 
         <!-- Waiting Screen -->
@@ -1111,6 +1115,101 @@
             phoneTarget = null;
             document.getElementById('confirmPhoneBtn').disabled = true;
         });
+
+        async function runPlayerDiag() {
+            const el = document.getElementById('playerDebugLog');
+            el.style.display = 'block';
+            el.textContent = '';
+            function log(msg) { el.textContent += msg + '\n'; el.scrollTop = el.scrollHeight; }
+
+            log('=== NETZWERK-DIAGNOSE (Player) ===');
+
+            // 1. Internet
+            try {
+                await fetch('https://www.google.com/favicon.ico', { mode: 'no-cors', cache: 'no-store' });
+                log('1. Internet: OK');
+            } catch(e) { log('1. Internet: FEHLER - ' + e.message); }
+
+            // 2. PeerJS Cloud
+            try {
+                const r = await fetch('https://0.peerjs.com/', { cache: 'no-store' });
+                log('2. PeerJS-Server: OK (Status ' + r.status + ')');
+            } catch(e) { log('2. PeerJS-Server: FEHLER - ' + e.message); }
+
+            // 3. STUN
+            try {
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+                pc.createDataChannel('test');
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                const candidate = await new Promise((resolve, reject) => {
+                    const t = setTimeout(() => reject(new Error('Timeout 5s')), 5000);
+                    pc.onicecandidate = (e) => {
+                        if (e.candidate) {
+                            clearTimeout(t);
+                            resolve(e.candidate.candidate);
+                        }
+                    };
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'complete') { clearTimeout(t); reject(new Error('Keine Kandidaten')); }
+                    };
+                });
+                const hasRelay = candidate.indexOf('relay') !== -1;
+                const hasSrflx = candidate.indexOf('srflx') !== -1;
+                log('3. STUN: OK - ' + (hasSrflx ? 'Public IP' : hasRelay ? 'Relay' : 'Host-only'));
+                log('   Kandidat: ' + candidate.substring(0, 80));
+                pc.close();
+            } catch(e) { log('3. STUN: FEHLER - ' + e.message); }
+
+            // 4. TURN TCP 443
+            try {
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }] });
+                pc.createDataChannel('test');
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                const found = await new Promise((resolve, reject) => {
+                    const t = setTimeout(() => reject(new Error('Timeout 5s')), 5000);
+                    pc.onicecandidate = (e) => {
+                        if (e.candidate && e.candidate.candidate.indexOf('relay') !== -1) {
+                            clearTimeout(t); resolve(true);
+                        }
+                    };
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'complete') { clearTimeout(t); reject(new Error('Kein Relay')); }
+                    };
+                });
+                log('4. TURN (TCP/443): OK - Relay verfuegbar');
+                pc.close();
+            } catch(e) { log('4. TURN (TCP/443): FEHLER - ' + e.message); }
+
+            // 5. TURNS (TLS 443)
+            try {
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }] });
+                pc.createDataChannel('test');
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                const found = await new Promise((resolve, reject) => {
+                    const t = setTimeout(() => reject(new Error('Timeout 5s')), 5000);
+                    pc.onicecandidate = (e) => {
+                        if (e.candidate && e.candidate.candidate.indexOf('relay') !== -1) {
+                            clearTimeout(t); resolve(true);
+                        }
+                    };
+                    pc.onicegatheringstatechange = () => {
+                        if (pc.iceGatheringState === 'complete') { clearTimeout(t); reject(new Error('Kein Relay')); }
+                    };
+                });
+                log('5. TURNS (TLS/443): OK');
+                pc.close();
+            } catch(e) { log('5. TURNS (TLS/443): FEHLER - ' + e.message); }
+
+            // 6. Peer status
+            log('6. Peer: ' + (peer ? (peer.open ? 'OFFEN (ID: ' + peer.id + ')' : 'NICHT OFFEN') : 'Nicht initialisiert'));
+            log('   Host-ID: ' + (hostId || 'KEINE'));
+
+            log('=== DIAGNOSE ENDE ===');
+            log('Bitte Screenshot an Lehrer senden!');
+        }
 
         // Auto-focus name input
         document.getElementById('playerName').focus();
