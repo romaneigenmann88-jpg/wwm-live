@@ -576,11 +576,10 @@
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
                         { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun.relay.metered.ca:80' },
-                        { urls: 'turn:global.relay.metered.ca:80', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' },
-                        { urls: 'turn:global.relay.metered.ca:443', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' },
-                        { urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' }
+                        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+                        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+                        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+                        { urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
                     ]
                 }
             });
@@ -673,7 +672,7 @@
 
             // Test 4: TURN
             try {
-                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'e8dd65e92f6932f15a6352de', credential: 'kMjCoS/t42AOPQ5N' }] });
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }] });
                 pc.createDataChannel('test');
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
