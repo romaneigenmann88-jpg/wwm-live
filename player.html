@@ -550,20 +550,30 @@
             `;
         }
 
-        function initPeer() {
+        async function initPeer() {
             console.log('[WWM] PeerJS wird initialisiert...');
+
+            let iceServers = [
+                { urls: 'stun:stun.relay.metered.ca:80' },
+                { urls: 'turn:global.relay.metered.ca:80', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' },
+                { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' },
+                { urls: 'turn:global.relay.metered.ca:443', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' },
+                { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' }
+            ];
+
+            try {
+                const resp = await fetch('https://wwm-live.metered.live/api/v1/turn/credentials?apiKey=03b24408468271208429991be1473776dcc1');
+                if (resp.ok) {
+                    iceServers = await resp.json();
+                    console.log('[WWM] TURN-Credentials geladen:', iceServers.length, 'Server');
+                }
+            } catch(e) {
+                console.log('[WWM] Dynamische Credentials fehlgeschlagen, nutze Fallback');
+            }
+
             peer = new Peer(null, {
                 debug: 2,
-                config: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-                        { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-                        { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-                        { urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }
-                    ]
-                }
+                config: { iceServers: iceServers }
             });
 
             peer.on('open', function(id) {
@@ -1085,21 +1095,22 @@
         }
 
         // Event Listeners
-        document.getElementById('joinBtn').addEventListener('click', function() {
+        document.getElementById('joinBtn').addEventListener('click', async function() {
             const nameInput = document.getElementById('playerName');
             const name = nameInput.value.trim();
-            
+
             if (name.length < 2) {
                 document.getElementById('joinStatus').textContent = 'Bitte gib einen gültigen Namen ein!';
                 return;
             }
-            
+
             playerName = name;
-            document.getElementById('joinStatus').textContent = 'Verbinde...';
-            
-            initPeer();
-            
-            // Wait for peer to initialize
+            document.getElementById('joinStatus').textContent = 'Lade TURN-Server...';
+
+            await initPeer();
+
+            document.getElementById('joinStatus').textContent = 'Verbinde mit Host...';
+            // Wait for peer to register with PeerJS server
             setTimeout(() => {
                 connectToHost();
             }, 1000);
@@ -1163,7 +1174,7 @@
 
             // 4. TURN TCP 443
             try {
-                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }] });
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' }] });
                 pc.createDataChannel('test');
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
@@ -1184,7 +1195,7 @@
 
             // 5. TURNS (TLS 443)
             try {
-                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turns:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' }] });
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' }] });
                 pc.createDataChannel('test');
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
