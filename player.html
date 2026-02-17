@@ -874,9 +874,14 @@
             jokers.fifty = false;
             fiftyFiftyUsed = true;
             activeJokers.push('fifty');
-            
+
             document.getElementById('fiftyBtn').disabled = true;
             document.getElementById('fiftyBtn').classList.add('active');
+
+            // Re-send answer with updated joker info if already selected
+            if (selectedAnswer !== null && isAlive) {
+                sendAnswer();
+            }
 
             // Request 50:50 help from host
             if (hostConnection && hostConnection.open) {
@@ -891,9 +896,14 @@
 
             jokers.audience = false;
             activeJokers.push('audience');
-            
+
             document.getElementById('audienceBtn').disabled = true;
             document.getElementById('audienceBtn').classList.add('active');
+
+            // Re-send answer with updated joker info if already selected
+            if (selectedAnswer !== null && isAlive) {
+                sendAnswer();
+            }
 
             // Show persistent message until answer is selected
             const statusText = document.getElementById('statusText');
@@ -938,21 +948,20 @@
 
             jokers.phone = false;
             activeJokers.push('phone');
-            
+
             document.getElementById('phoneBtn').disabled = true;
             document.getElementById('phoneBtn').classList.add('active');
             document.getElementById('phoneModal').classList.remove('active');
 
+            // Re-send answer with updated joker info if already selected
+            if (selectedAnswer !== null && isAlive) {
+                sendAnswer();
+            }
+
             // Show non-blocking message
             const statusText = document.getElementById('statusText');
-            const originalText = statusText.textContent;
             statusText.textContent = '📞 Telefonjoker aktiv! Wähle deine Antwort!';
             statusText.style.color = '#ffd700';
-            
-            setTimeout(() => {
-                statusText.textContent = originalText;
-                statusText.style.color = '';
-            }, 3000);
         }
 
         function sendAnswer() {
