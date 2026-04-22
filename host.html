@@ -423,25 +423,25 @@
         // ===== QUESTIONS =====
         const questions = [
             			// Stufe 1–5: Sehr einfach
-			{ question: "Wie heisst die weibliche Keimzelle?", answers: ["Eizelle", "Spermium", "Embryo", "Hormon"], correct: 0 },
-			{ question: "Wie heisst die männliche Keimzelle?", answers: ["Hormon", "Embryo", "Spermium", "Follikel"], correct: 2 },
-			{ question: "Wo wächst ein Baby während der Schwangerschaft?", answers: ["Gebärmutter", "Scheide", "Eileiter", "Eierstock"], correct: 0 },
-			{ question: "Wie nennt man die monatliche Blutung bei Mädchen und Frauen?", answers: ["Eisprung", "Menstruation", "Pubertät", "Befruchtung"], correct: 1 },
-			{ question: "Was entsteht direkt nach der Befruchtung?", answers: ["Embryo", "Follikel", "Gebärmutterschleimhaut", "Eizelle"], correct: 0 },
+			{ question: "Welche Zahl ist die kleinste?", answers: ["3", "-1", "0", "2"], correct: 1 },
+			{ question: "Welche Zahl ist grösser?", answers: ["-7 ist grösser als -3", "-3 ist grösser als -7", "Beide sind gleich gross", "Keine von beiden ist eine Zahl"], correct: 1 },
+			{ question: "Was ergibt 5 + (-2)?", answers: ["7", "-7", "3", "-3"], correct: 2 },
+			{ question: "Welcher Punkt liegt auf der y-Achse?", answers: ["(4|0)", "(0|4)", "(4|4)", "(-4|4)"], correct: 1 },
+			{ question: "In welchem Quadranten liegt der Punkt (3|2)?", answers: ["1. Quadrant", "2. Quadrant", "3. Quadrant", "4. Quadrant"], correct: 0 },
 
 			// Stufe 6–10: Mittel
-			{ question: "Welche Struktur produziert die Spermien?", answers: ["Samenleiter", "Nebenhoden", "Prostata", "Hoden"], correct: 3 },
-			{ question: "Wo reift die Eizelle heran?", answers: ["Gebärmutter", "Scheide", "Eileiter", "Eierstock"], correct: 3 },
-			{ question: "Welche Aufgabe hat der Eileiter?", answers: ["Eizellen bilden", "Ort der Befruchtung sein", "Hormone produzieren", "Menstruationsblut abführen"], correct: 1 },
-			{ question: "Was passiert mit der Gebärmutterschleimhaut ohne Schwangerschaft?", answers: ["Sie bleibt bestehen", "Sie wird dicker", "Sie wird abgestossen", "Sie produziert Hormone"], correct: 2 },
-			{ question: "Wie lange können Spermien im Körper der Frau überleben?", answers: ["Nur wenige Minuten", "Etwa 1 Tag", "Bis zu mehreren Tagen", "Mehrere Wochen"], correct: 2 },
+			{ question: "Was ergibt -4 + (-3)?", answers: ["7", "-7", "-1", "1"], correct: 1 },
+			{ question: "Welcher Punkt liegt im 2. Quadranten?", answers: ["(2|5)", "(-2|5)", "(-2|-5)", "(2|-5)"], correct: 1 },
+			{ question: "Was ergibt 7 - 12?", answers: ["5", "-5", "19", "-19"], correct: 1 },
+			{ question: "Welcher Punkt hat den x-Wert -3 und den y-Wert 4?", answers: ["(4|-3)", "(-3|4)", "(-4|3)", "(3|-4)"], correct: 1 },
+			{ question: "Welche Zahl liegt auf dem Zahlenstrahl genau zwischen -6 und 2?", answers: ["-4", "-2", "0", "1"], correct: 1 },
 
 			// Stufe 11–15: Schwer (15 = Million)
-			{ question: "Welches Hormon bereitet nach dem Eisprung die Gebärmutter auf eine Schwangerschaft vor?", answers: ["Progesteron", "Östrogen", "Testosteron", "Insulin"], correct: 0 },
-			{ question: "Welche Veränderung zeigt an, dass der Eisprung bereits stattgefunden hat?", answers: ["Beginn der Menstruation", "Abbau der Schleimhaut", "Leichter Anstieg der Körpertemperatur", "Stopp der Hormonproduktion"], correct: 2 },
-			{ question: "Welche Reihenfolge beschreibt den Ablauf einer möglichen Schwangerschaft korrekt?", answers: ["Eisprung → Befruchtung → Einnistung", "Befruchtung → Eisprung → Menstruation", "Menstruation → Eisprung → Befruchtung", "Einnistung → Befruchtung → Eisprung"], correct: 0 },
-			{ question: "Warum ist eine Schwangerschaft kurz nach dem Eisprung besonders wahrscheinlich?", answers: ["Weil dann mehrere Eizellen vorhanden sind", "Weil die Gebärmutter leer ist", "Weil Eizelle befruchtbar ist und Spermien überleben können", "Weil die Menstruation vorbei ist"], correct: 2 },
-			{ question: "Welche Bedingungen müssen gleichzeitig erfüllt sein, damit eine Schwangerschaft entstehen kann?", answers: ["Menstruation und Hormone", "Eisprung, befruchtbare Eizelle und lebende Spermien", "Zyklusbeginn und Temperaturanstieg", "Schleimhautabbau und Eisprung"], correct: 1 }
+			{ question: "Vom Ursprung aus geht man 4 nach links und 3 nach oben. Wo landet man?", answers: ["(4|3)", "(-4|3)", "(-3|4)", "(3|-4)"], correct: 1 },
+			{ question: "Was ergibt -8 - (-5)?", answers: ["-13", "-3", "3", "13"], correct: 1 },
+			{ question: "Welcher Punkt liegt nicht im 4. Quadranten?", answers: ["(5|-2)", "(1|-6)", "(-5|-2)", "(8|-1)"], correct: 2 },
+			{ question: "Ein Punkt hat die Koordinaten (-2|-4). Welche Aussage stimmt?", answers: ["Er liegt 2 nach rechts und 4 nach oben", "Er liegt 2 nach links und 4 nach unten", "Er liegt im 2. Quadranten", "Er liegt auf der x-Achse"], correct: 1 },
+			{ question: "Welche Rechnung und welcher Punkt passen beide richtig zusammen?", answers: ["-3 + 7 = 4 und (4|-2) liegt im 4. Quadranten", "-3 + 7 = -4 und (-4|2) liegt im 2. Quadranten", "-3 + 7 = 4 und (-4|2) liegt im 4. Quadranten", "-3 + 7 = 3 und (4|-2) liegt auf der y-Achse"], correct: 0 }
         ];
 
         const prizeLevels = [
