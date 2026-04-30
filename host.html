@@ -955,6 +955,14 @@
             const correctAnswer = q.correct;
             const results = [];
 
+            // Snapshot BEFORE the loop – alive-Status wird während der Schleife verändert,
+            // daher müssen wir die Antworten aller lebenden Spieler vorher sichern,
+            // damit der Publikumsjoker immer korrekt berechnet wird.
+            const snapshotAnswers = new Map();
+            players.forEach((p, id) => {
+                if (p.alive && p.answered) snapshotAnswers.set(id, p.currentAnswer);
+            });
+
             players.forEach(player => {
                 if (!player.alive) {
                     results.push({ name: player.name, status: 'dead', answer: '-', correct: false });
@@ -974,9 +982,11 @@
 
                 if (usedAudience) {
                     const ownCorrect = player.currentAnswer === correctAnswer;
-                    const aliveAnswers = Array.from(players.values())
-                        .filter(p => p.alive && p.answered && p.id !== player.id)
-                        .map(p => p.currentAnswer);
+                    // Snapshot verwenden statt live players.values() – damit wird der
+                    // alive-Status aus dem Moment VOR der Auswertung genutzt.
+                    const aliveAnswers = Array.from(snapshotAnswers.entries())
+                        .filter(([id]) => id !== player.id)
+                        .map(([, answer]) => answer);
                     let majorityCorrect = false;
                     if (aliveAnswers.length > 0) {
                         const counts = [0,0,0,0];
