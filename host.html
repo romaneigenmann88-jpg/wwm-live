@@ -359,13 +359,9 @@
         .preview-question .q-num { color: #ffd700; font-size: 11px; font-weight: bold; margin-bottom: 3px; }
         .preview-question .q-text { font-size: 13px; margin-bottom: 7px; line-height: 1.4; }
         .preview-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-        .preview-answer {
-            font-size: 11px; padding: 3px 7px; border-radius: 4px;
-            background: #161b22; border: 1px solid #30363d; white-space: nowrap;
-            overflow: hidden; text-overflow: ellipsis;
-        }
-        .preview-answer.correct {
-            background: #0d4429; border-color: #3fb950; color: #3fb950; font-weight: bold;
+        .preview-question input:focus {
+            border-color: #58a6ff !important;
+            color: #e6edf3 !important;
         }
         .editor-actions {
             display: flex; justify-content: space-between; align-items: center; margin-top: 14px;
@@ -551,71 +547,179 @@
         let timerInterval;
         let timeLeft = 30;
 
-        // ===== FRAGEN-EDITOR =====
-        function initEditor() {
-            const textarea = document.getElementById('questionsEditor');
-            // Fragen als sauberes JSON vorausfüllen (ohne Kommentare)
-            const clean = questions.map(q => ({
-                question: q.question,
-                answers: q.answers,
-                correct: q.correct
-            }));
-            textarea.value = JSON.stringify(clean, null, 2);
-            updateEditorPreview();
-            textarea.addEventListener('input', updateEditorPreview);
-        }
+        // ===== FRAGEN-EDITOR (bidirektional) =====
+        let editorQuestions = [];
+        let editorSyncing   = false;
+        const LETTERS       = ['A','B','C','D'];
 
-        function updateEditorPreview() {
-            const textarea  = document.getElementById('questionsEditor');
-            const previewEl = document.getElementById('editorPreview');
-            const statusEl  = document.getElementById('editorStatus');
-            const applyBtn  = document.getElementById('applyQuestionsBtn');
-            const letters   = ['A', 'B', 'C', 'D'];
-
-            try {
-                const parsed = JSON.parse(textarea.value);
-                if (!Array.isArray(parsed)) throw new Error('Muss ein Array [ … ] sein');
-                if (parsed.length === 0) throw new Error('Mindestens 1 Frage erforderlich');
-                parsed.forEach((q, i) => {
-                    if (!q.question) throw new Error(`Frage ${i+1}: "question" fehlt`);
-                    if (!Array.isArray(q.answers) || q.answers.length !== 4)
-                        throw new Error(`Frage ${i+1}: "answers" muss genau 4 Einträge haben`);
-                    if (typeof q.correct !== 'number' || q.correct < 0 || q.correct > 3)
-                        throw new Error(`Frage ${i+1}: "correct" muss 0, 1, 2 oder 3 sein`);
-                });
-
-                previewEl.innerHTML = parsed.map((q, i) => `
-                    <div class="preview-question">
-                        <div class="q-num">Frage ${i+1} / ${parsed.length}</div>
-                        <div class="q-text">${q.question}</div>
-                        <div class="preview-answers">
-                            ${q.answers.map((a, j) => `
-                                <div class="preview-answer${j === q.correct ? ' correct' : ''}">
-                                    ${letters[j]}: ${a}
-                                </div>`).join('')}
-                        </div>
-                    </div>`).join('');
-
-                statusEl.textContent = `✓ ${parsed.length} Fragen — alles korrekt`;
-                statusEl.style.color = '#3fb950';
-                textarea.classList.remove('error');
-                applyBtn.disabled = false;
-            } catch(e) {
-                previewEl.innerHTML = '<p style="color:#8b949e;padding:30px;text-align:center;">⚠ Kein gültiges Format</p>';
-                statusEl.textContent = '✗ ' + e.message;
-                statusEl.style.color = '#f85149';
-                textarea.classList.add('error');
-                applyBtn.disabled = true;
+        // --- Parsen: toleriert mit oder ohne äussere [ ] und ```json-Blöcke ---
+        function parseEditorText(raw) {
+            let text = raw.trim()
+                .replace(/^```[a-z]*\n?/i,'').replace(/```$/,'').trim();
+            // Versuche direkt als Array
+            try { return JSON.parse(text); } catch(_) {}
+            // Versuche mit äusseren Klammern ergänzen
+            try { return JSON.parse('[' + text + ']'); } catch(_) {}
+            // Versuche bestehende Klammern entfernen + neu einfügen
+            try { return JSON.parse('[' + text.replace(/^\[/,'').replace(/\]$/,'') + ']'); } catch(e) {
+                throw e;
             }
         }
 
-        function applyQuestions() {
+        // --- Fragen → Text (ohne äussere [ ] ) ---
+        function questionsToText(qs) {
+            return qs.map(q => JSON.stringify(
+                { question: q.question, answers: q.answers, correct: q.correct }, null, 2
+            )).join(',\n');
+        }
+
+        function validateQuestions(qs) {
+            if (!Array.isArray(qs) || qs.length === 0)
+                throw new Error('Mindestens 1 Frage erforderlich');
+            qs.forEach((q,i) => {
+                if (!q.question) throw new Error(`Frage ${i+1}: "question" fehlt`);
+                if (!Array.isArray(q.answers) || q.answers.length !== 4)
+                    throw new Error(`Frage ${i+1}: "answers" braucht genau 4 Einträge`);
+                if (typeof q.correct !== 'number' || q.correct < 0 || q.correct > 3)
+                    throw new Error(`Frage ${i+1}: "correct" muss 0 – 3 sein`);
+            });
+        }
+
+        // --- Status + Apply-Button setzen ---
+        function setEditorStatus(ok, msg) {
+            const el  = document.getElementById('editorStatus');
+            const btn = document.getElementById('applyQuestionsBtn');
+            el.textContent  = msg;
+            el.style.color  = ok ? '#3fb950' : '#f85149';
+            btn.disabled    = !ok;
+        }
+
+        // --- Textarea aus editorQuestions neu befüllen ---
+        function syncTextareaFromData() {
+            if (editorSyncing) return;
+            editorSyncing = true;
+            const ta = document.getElementById('questionsEditor');
+            ta.value = questionsToText(editorQuestions);
+            ta.classList.remove('error');
+            setEditorStatus(true, `✓ ${editorQuestions.length} Fragen — alles korrekt`);
+            editorSyncing = false;
+        }
+
+        // --- Karten aus editorQuestions neu rendern ---
+        function renderCards() {
+            const container = document.getElementById('editorPreview');
+            const scrollTop = container.scrollTop;
+            container.innerHTML = '';
+
+            editorQuestions.forEach((q, qi) => {
+                const card = document.createElement('div');
+                card.className = 'preview-question';
+
+                // Header
+                const hdr = document.createElement('div');
+                hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;';
+                hdr.innerHTML = `<div class="q-num">Frage ${qi+1} / ${editorQuestions.length}</div>`;
+                const del = document.createElement('button');
+                del.textContent = '✕ löschen';
+                del.style.cssText = 'background:none;border:none;color:#f85149;cursor:pointer;font-size:11px;';
+                del.addEventListener('click', () => {
+                    if (editorQuestions.length <= 1) { alert('Mindestens 1 Frage nötig!'); return; }
+                    editorQuestions.splice(qi, 1);
+                    syncTextareaFromData(); renderCards();
+                });
+                hdr.appendChild(del); card.appendChild(hdr);
+
+                // Frage-Input
+                const qInput = document.createElement('input');
+                qInput.type = 'text'; qInput.value = q.question;
+                qInput.placeholder = 'Frage eingeben…';
+                qInput.style.cssText = 'width:100%;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#e6edf3;padding:6px 8px;font-size:13px;margin-bottom:8px;outline:none;box-sizing:border-box;';
+                qInput.addEventListener('input', () => {
+                    editorQuestions[qi].question = qInput.value;
+                    syncTextareaFromData();
+                });
+                card.appendChild(qInput);
+
+                // Antwort-Zeilen
+                q.answers.forEach((ans, ai) => {
+                    const isCorrect = ai === q.correct;
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:4px;';
+
+                    // Buchstaben-Badge (Klick = richtige Antwort)
+                    const badge = document.createElement('span');
+                    badge.textContent = LETTERS[ai];
+                    badge.title = 'Klicken = richtige Antwort';
+                    badge.style.cssText = `width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;cursor:pointer;flex-shrink:0;transition:all .15s;background:${isCorrect ? '#3fb950' : '#30363d'};color:${isCorrect ? '#fff' : '#8b949e'};`;
+                    badge.addEventListener('click', () => {
+                        editorQuestions[qi].correct = ai;
+                        syncTextareaFromData(); renderCards();
+                    });
+
+                    // Antwort-Input
+                    const aInput = document.createElement('input');
+                    aInput.type = 'text'; aInput.value = ans;
+                    aInput.placeholder = `Antwort ${LETTERS[ai]}…`;
+                    aInput.style.cssText = `flex:1;background:#0d1117;border:1px solid ${isCorrect ? '#3fb950' : '#30363d'};border-radius:4px;color:${isCorrect ? '#3fb950' : '#e6edf3'};padding:4px 8px;font-size:12px;outline:none;${isCorrect ? 'font-weight:600;' : ''}`;
+                    aInput.addEventListener('input', () => {
+                        editorQuestions[qi].answers[ai] = aInput.value;
+                        syncTextareaFromData();
+                    });
+
+                    row.appendChild(badge); row.appendChild(aInput);
+                    card.appendChild(row);
+                });
+
+                container.appendChild(card);
+            });
+
+            // + Frage hinzufügen
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn';
+            addBtn.textContent = '+ Frage hinzufügen';
+            addBtn.style.cssText = 'width:100%;margin-top:8px;background:#21262d;';
+            addBtn.addEventListener('click', () => {
+                editorQuestions.push({ question:'', answers:['','','',''], correct:0 });
+                syncTextareaFromData(); renderCards();
+                container.lastElementChild.scrollIntoView({ behavior:'smooth' });
+            });
+            container.appendChild(addBtn);
+
+            container.scrollTop = scrollTop;
+        }
+
+        // --- Textarea → editorQuestions + Karten neu rendern ---
+        function onTextareaInput() {
+            if (editorSyncing) return;
+            const ta = document.getElementById('questionsEditor');
             try {
-                const parsed = JSON.parse(document.getElementById('questionsEditor').value);
-                questions = parsed;
-                document.getElementById('editorPanel').classList.add('hidden');
-                document.getElementById('setupPanel').classList.remove('hidden');
-            } catch(e) { /* Button ist disabled wenn ungültig */ }
+                const parsed = parseEditorText(ta.value);
+                validateQuestions(parsed);
+                editorSyncing = true;
+                editorQuestions = parsed;
+                renderCards();
+                ta.classList.remove('error');
+                setEditorStatus(true, `✓ ${parsed.length} Fragen — alles korrekt`);
+                editorSyncing = false;
+            } catch(e) {
+                ta.classList.add('error');
+                setEditorStatus(false, '✗ ' + e.message);
+            }
+        }
+
+        function initEditor() {
+            editorQuestions = questions.map(q => ({
+                question: q.question, answers: [...q.answers], correct: q.correct
+            }));
+            syncTextareaFromData();
+            renderCards();
+            document.getElementById('questionsEditor').addEventListener('input', onTextareaInput);
+        }
+
+        function applyQuestions() {
+            questions = editorQuestions.map(q => ({...q}));
+            document.getElementById('editorPanel').classList.add('hidden');
+            document.getElementById('setupPanel').classList.remove('hidden');
         }
 
         function backToEditor() {
