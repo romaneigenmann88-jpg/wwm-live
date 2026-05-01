@@ -991,7 +991,10 @@
                     if (aliveAnswers.length > 0) {
                         const counts = [0,0,0,0];
                         aliveAnswers.forEach(a => counts[a]++);
-                        majorityCorrect = counts.indexOf(Math.max(...counts)) === correctAnswer;
+                        const maxCount = Math.max(...counts);
+                        // Bei Gleichstand rettet der Joker → richtige Antwort muss nur
+                        // gleich viele Stimmen haben wie die meistgewählte Antwort.
+                        majorityCorrect = counts[correctAnswer] === maxCount;
                     }
                     isCorrect = ownCorrect || majorityCorrect;
                     if (ownCorrect && majorityCorrect) explanation = '(Publikum + Eigene ✓)';
