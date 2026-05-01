@@ -263,6 +263,12 @@
         .badge.dead { background: #da3633; }
         .badge.answered { background: #9e6a03; color: #fff; }
         .badge.connected { background: #1f6feb; }
+        .badge.joker-used { background: #6e40c9; color: #fff; font-size: 10px; }
+        .player-meta { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+        .player-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .joker-icons { display: flex; gap: 2px; flex-shrink: 0; }
+        .joker-icon { font-size: 12px; line-height: 1; }
+        .joker-icon.spent { opacity: 0.2; filter: grayscale(1); }
 
         /* --- Sound Panel --- */
         .sound-grid {
@@ -766,6 +772,15 @@
                 }
             }
 
+            if (data.type === 'jokerActivated') {
+                const player = players.get(conn.peer);
+                if (player && player.alive) {
+                    player.activeJokerThisRound = data.joker;
+                    if (player.remainingJokers) player.remainingJokers[data.joker] = false;
+                    updatePlayersList();
+                }
+            }
+
             if (data.type === 'useFiftyFifty') {
                 const q = questions[currentQuestionIndex];
                 if (q) {
@@ -815,6 +830,7 @@
                     div.classList.add('alive');
                 }
 
+                // Status-Badge
                 let badge = '';
                 if (!gameStarted) {
                     badge = '<span class="badge connected">Verbunden</span>';
@@ -826,7 +842,31 @@
                     badge = '<span class="badge alive">Lebt</span>';
                 }
 
-                div.innerHTML = `<span>${player.name}</span>${badge}`;
+                // Joker dieser Runde (live anzeigen sobald eingesetzt)
+                let jokerBadge = '';
+                if (gameStarted && player.alive && player.activeJokerThisRound) {
+                    const labels = { fifty: '🎯 50:50', audience: '👥 Publik.', phone: '📞 Tel.' };
+                    jokerBadge = `<span class="badge joker-used">${labels[player.activeJokerThisRound]}</span>`;
+                }
+
+                // Verbleibende Joker-Icons
+                let jokerIcons = '';
+                if (gameStarted) {
+                    const rem = player.remainingJokers || { fifty: true, audience: true, phone: true };
+                    jokerIcons = `<span class="joker-icons">
+                        <span class="joker-icon${rem.fifty ? '' : ' spent'}" title="50:50">🎯</span>
+                        <span class="joker-icon${rem.audience ? '' : ' spent'}" title="Publikum">👥</span>
+                        <span class="joker-icon${rem.phone ? '' : ' spent'}" title="Telefon">📞</span>
+                    </span>`;
+                }
+
+                div.innerHTML = `
+                    <span class="player-meta">
+                        <span class="player-name">${player.name}</span>
+                        ${jokerIcons}
+                        ${jokerBadge}
+                    </span>
+                    ${badge}`;
                 listEl.appendChild(div);
             });
         }
@@ -847,6 +887,8 @@
             players.forEach(player => {
                 player.alive = true;
                 player.jokers = { fifty: true, audience: true, phone: true };
+                player.remainingJokers = { fifty: true, audience: true, phone: true };
+                player.activeJokerThisRound = null;
             });
 
             document.getElementById('setupPanel').classList.add('hidden');
@@ -873,6 +915,7 @@
                 player.jokersUsed = [];
                 player.phoneTarget = null;
                 player.answered = false;
+                player.activeJokerThisRound = null;
             });
 
             // Update dashboard

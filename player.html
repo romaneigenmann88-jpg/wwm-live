@@ -883,11 +883,10 @@
                 sendAnswer();
             }
 
-            // Request 50:50 help from host
+            // Request 50:50 help from host + live Joker-Anzeige
             if (hostConnection && hostConnection.open) {
-                hostConnection.send({
-                    type: 'useFiftyFifty'
-                });
+                hostConnection.send({ type: 'jokerActivated', joker: 'fifty' });
+                hostConnection.send({ type: 'useFiftyFifty' });
             }
         }
 
@@ -899,6 +898,11 @@
 
             document.getElementById('audienceBtn').disabled = true;
             document.getElementById('audienceBtn').classList.add('active');
+
+            // Live Joker-Anzeige beim Host
+            if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'jokerActivated', joker: 'audience' });
+            }
 
             // Re-send answer with updated joker info if already selected
             if (selectedAnswer !== null && isAlive) {
@@ -952,6 +956,11 @@
             document.getElementById('phoneBtn').disabled = true;
             document.getElementById('phoneBtn').classList.add('active');
             document.getElementById('phoneModal').classList.remove('active');
+
+            // Live Joker-Anzeige beim Host
+            if (hostConnection && hostConnection.open) {
+                hostConnection.send({ type: 'jokerActivated', joker: 'phone' });
+            }
 
             // Re-send answer with updated joker info if already selected
             if (selectedAnswer !== null && isAlive) {
