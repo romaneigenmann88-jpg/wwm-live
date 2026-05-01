@@ -474,7 +474,7 @@
             <div class="status-bar alive" id="statusBar">
                 <div style="font-size: 14px;">Frage <span id="questionNumber">1</span> von 15</div>
                 <div style="font-size: 18px; font-weight: bold; margin: 5px 0;">
-                    <span id="prizeDisplay">€ 50</span>
+                    <span id="prizeDisplay">Fr. 50</span>
                 </div>
                 <div id="statusText" style="font-size: 14px; color: #4caf50;">✓ Du bist noch dabei!</div>
             </div>
@@ -530,9 +530,9 @@
 
     <script>
         const prizeLevels = [
-            "€ 50", "€ 100", "€ 200", "€ 300", "€ 500",
-            "€ 1.000", "€ 2.000", "€ 4.000", "€ 8.000", "€ 16.000",
-            "€ 32.000", "€ 64.000", "€ 125.000", "€ 500.000", "€ 1.000.000"
+            "Fr. 50", "Fr. 100", "Fr. 200", "Fr. 300", "Fr. 500",
+            "Fr. 1.000", "Fr. 2.000", "Fr. 4.000", "Fr. 8.000", "Fr. 16.000",
+            "Fr. 32.000", "Fr. 64.000", "Fr. 125.000", "Fr. 500.000", "Fr. 1.000.000"
         ];
 
         let peer;
@@ -789,8 +789,8 @@
                 highestPrize,
                 totalDeductions,
                 finalScore,
-                formattedScore: '€ ' + finalScore.toLocaleString('de-CH'),
-                formattedHighest: '€ ' + highestPrize.toLocaleString('de-CH')
+                formattedScore: 'Fr. ' + finalScore.toLocaleString('de-CH'),
+                formattedHighest: 'Fr. ' + highestPrize.toLocaleString('de-CH')
             };
         }
 
