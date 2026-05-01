@@ -413,23 +413,34 @@
                 <div style="margin-bottom:12px;">
                     <button class="btn" id="backToEditorBtn" style="background:#21262d; font-size:13px;">← Fragen bearbeiten</button>
                 </div>
-                <div class="card setup-card">
-                    <h2>Spiel einrichten</h2>
-                    <p style="color:#8b949e; margin-bottom:14px;">Spieler scannen den QR-Code oder öffnen den Link:</p>
-                    <div id="qrcode"></div>
-                    <div class="join-url" id="joinUrl">Warte auf Verbindung...</div>
-                    <div>
-                        <button class="open-display-btn" id="openDisplayBtn">📺 Beamer-Anzeige öffnen</button>
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <button class="btn green" id="startGameBtn" disabled>▶ Spiel starten</button>
-                    </div>
-                    <div style="margin-top: 20px;">
-                        <button class="btn" id="debugToggle" style="background:#333;font-size:12px;" onclick="document.getElementById('debugPanel').style.display = document.getElementById('debugPanel').style.display === 'none' ? 'block' : 'none';">Netzwerk-Diagnose anzeigen</button>
-                        <div id="debugPanel" style="display:none; margin-top:10px;">
-                            <pre id="debugLog" style="background:#0a0a0a; border:1px solid #30363d; border-radius:6px; padding:10px; font-size:11px; max-height:200px; overflow-y:auto; color:#8b949e; text-align:left; white-space:pre-wrap;"></pre>
-                            <button class="btn" style="background:#333;font-size:11px;margin-top:6px;" onclick="runNetworkTest();">Netzwerk-Test starten</button>
+                <div style="display:grid; grid-template-columns:320px 1fr; gap:16px; align-items:start;">
+                    <!-- Links: QR / Start -->
+                    <div class="card setup-card">
+                        <h2>Spiel einrichten</h2>
+                        <p style="color:#8b949e; margin-bottom:14px;">Spieler scannen den QR-Code oder öffnen den Link:</p>
+                        <div id="qrcode"></div>
+                        <div class="join-url" id="joinUrl">Warte auf Verbindung...</div>
+                        <div>
+                            <button class="open-display-btn" id="openDisplayBtn">📺 Beamer-Anzeige öffnen</button>
                         </div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn green" id="startGameBtn" disabled>▶ Spiel starten</button>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <button class="btn" id="debugToggle" style="background:#333;font-size:12px;" onclick="document.getElementById('debugPanel').style.display = document.getElementById('debugPanel').style.display === 'none' ? 'block' : 'none';">Netzwerk-Diagnose anzeigen</button>
+                            <div id="debugPanel" style="display:none; margin-top:10px;">
+                                <pre id="debugLog" style="background:#0a0a0a; border:1px solid #30363d; border-radius:6px; padding:10px; font-size:11px; max-height:200px; overflow-y:auto; color:#8b949e; text-align:left; white-space:pre-wrap;"></pre>
+                                <button class="btn" style="background:#333;font-size:11px;margin-top:6px;" onclick="runNetworkTest();">Netzwerk-Test starten</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rechts: Finale Fragenvorschau -->
+                    <div class="card" style="max-height:calc(100vh - 130px); overflow-y:auto;">
+                        <h2 style="margin-bottom:12px;">📋 Finale Fragenvorschau
+                            <span id="setupQuestionCount" style="font-size:13px; color:#8b949e; font-weight:normal; margin-left:8px;"></span>
+                        </h2>
+                        <div id="setupQuestionsList"></div>
                     </div>
                 </div>
             </div>
@@ -718,6 +729,27 @@
 
         function applyQuestions() {
             questions = editorQuestions.map(q => ({...q}));
+
+            // Finale Vorschau rendern
+            const list  = document.getElementById('setupQuestionsList');
+            const count = document.getElementById('setupQuestionCount');
+            count.textContent = `(${questions.length} Fragen)`;
+            list.innerHTML = questions.map((q, i) => `
+                <div style="border:1px solid #30363d; border-radius:6px; padding:10px 12px; margin-bottom:8px; background:#0d1117;">
+                    <div style="font-size:11px; color:#ffd700; font-weight:bold; margin-bottom:4px;">Frage ${i+1}</div>
+                    <div style="font-size:13px; margin-bottom:7px; line-height:1.4;">${q.question}</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+                        ${q.answers.map((a, j) => `
+                            <div style="font-size:11px; padding:3px 7px; border-radius:4px;
+                                background:${j===q.correct ? '#0d4429' : '#161b22'};
+                                border:1px solid ${j===q.correct ? '#3fb950' : '#30363d'};
+                                color:${j===q.correct ? '#3fb950' : '#e6edf3'};
+                                font-weight:${j===q.correct ? '600' : 'normal'};">
+                                ${LETTERS[j]}: ${a}
+                            </div>`).join('')}
+                    </div>
+                </div>`).join('');
+
             document.getElementById('editorPanel').classList.add('hidden');
             document.getElementById('setupPanel').classList.remove('hidden');
         }
