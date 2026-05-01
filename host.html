@@ -522,28 +522,23 @@
     </div>
 
     <script>
-        // ===== QUESTIONS =====
+        // ===== QUESTIONS (generische Vorlage – wird durch localStorage oder Editor ersetzt) =====
         let questions = [
-            			// Stufe 1–5: Sehr einfach
-			{ question: "Welche Zahl ist negativ?", answers: ["7", "0", "−3", "12"], correct: 2 },
-			{ question: "Welche Zahl ist die Gegenzahl von 8?", answers: ["8", "−8", "0", "16"], correct: 1 },
-			{ question: "Welche Zahl ist am kleinsten?", answers: ["−2", "−9", "0", "4"], correct: 1 },
-			{ question: "Was ergibt −6 + 10?", answers: ["−16", "−4", "4", "16"], correct: 2 },
-			{ question: "Was ergibt 7 − (−5)?", answers: ["2", "−2", "12", "−12"], correct: 2 },
-
-			// Stufe 6–10: Mittel
-			{ question: "Welche Aussage ist richtig?", answers: ["−12 ist grösser als −5.", "−12 ist kleiner als −5.", "−12 und −5 sind gleich gross.", "−5 liegt links von −12."], correct: 1 },
-			{ question: "Was ergibt (−4) · 6?", answers: ["24", "−24", "−10", "10"], correct: 1 },
-			{ question: "Was ergibt (−5) · (−3)?", answers: ["−15", "15", "−8", "8"], correct: 1 },
-			{ question: "In welchem Quadranten liegt der Punkt P(−3 / 5)?", answers: ["1. Quadrant", "2. Quadrant", "3. Quadrant", "4. Quadrant"], correct: 1 },
-			{ question: "Was ergibt (−2)⁴?", answers: ["−8", "8", "−16", "16"], correct: 3 },
-
-			// Stufe 11–15: Schwer (15 = Million)
-			{ question: "Was ergibt −3²?", answers: ["9", "−9", "6", "−6"], correct: 1 },
-			{ question: "Der Punkt A(4 / −6) wird an der x-Achse gespiegelt. Wie heisst der neue Punkt?", answers: ["A'(−4 / −6)", "A'(4 / 6)", "A'(−4 / 6)", "A'(6 / 4)"], correct: 1 },
-			{ question: "Berechne: (−6)² − (−4) · (−3)²", answers: ["72", "0", "−72", "36"], correct: 0 },
-			{ question: "Ein Dreieck wird nach der Regel (x − 5 / y + 3) verschoben. Punkt B(2 / −4) wird verschoben. Wo liegt B'?", answers: ["B'(−3 / −1)", "B'(7 / −1)", "B'(−3 / −7)", "B'(3 / 1)"], correct: 0 },
-			{ question: "Berechne: −(−4)² + (−18) : 3 · (−2)²", answers: ["−40", "−8", "8", "40"], correct: 0 }
+            { question: "Frage 1",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 2",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 3",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 4",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 5",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 6",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 7",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 8",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 9",  answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 10", answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 11", answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 12", answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 13", answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 14", answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 },
+            { question: "Frage 15", answers: ["Antwort A", "Antwort B", "Antwort C", "Antwort D"], correct: 0 }
         ];
 
         const prizeLevels = [
