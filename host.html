@@ -312,6 +312,64 @@
 
         /* --- Hidden --- */
         .hidden { display: none !important; }
+
+        /* --- Fragen-Editor --- */
+        .editor-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .editor-header h2 { font-size: 16px; color: #ffd700; }
+        .editor-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            height: calc(100vh - 180px);
+        }
+        .editor-col { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .editor-col-label {
+            font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+            color: #8b949e; font-weight: 600;
+        }
+        .editor-textarea {
+            flex: 1;
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e6edf3;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 12px;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .editor-textarea:focus { border-color: #58a6ff; }
+        .editor-textarea.error { border-color: #f85149; }
+        .editor-status { font-size: 12px; min-height: 18px; }
+        .editor-preview { flex: 1; overflow-y: auto; }
+        .preview-question {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+        .preview-question .q-num { color: #ffd700; font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+        .preview-question .q-text { font-size: 13px; margin-bottom: 7px; line-height: 1.4; }
+        .preview-answers { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .preview-answer {
+            font-size: 11px; padding: 3px 7px; border-radius: 4px;
+            background: #161b22; border: 1px solid #30363d; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .preview-answer.correct {
+            background: #0d4429; border-color: #3fb950; color: #3fb950; font-weight: bold;
+        }
+        .editor-actions {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 14px;
+        }
     </style>
 </head>
 <body>
@@ -329,8 +387,36 @@
         <!-- ===== MAIN PANEL ===== -->
         <div class="main-panel">
 
+            <!-- FRAGEN-EDITOR -->
+            <div id="editorPanel">
+                <div class="editor-header">
+                    <h2>✏️ Fragen bearbeiten</h2>
+                    <span style="font-size:13px; color:#8b949e;">Passe die Fragen an, dann weiter zum Spiel.</span>
+                </div>
+                <div class="editor-layout">
+                    <!-- Links: JSON-Code -->
+                    <div class="editor-col">
+                        <div class="editor-col-label">📋 JSON-Code (alles kopierbar)</div>
+                        <textarea class="editor-textarea" id="questionsEditor" spellcheck="false"></textarea>
+                        <div class="editor-status" id="editorStatus"></div>
+                    </div>
+                    <!-- Rechts: Vorschau -->
+                    <div class="editor-col">
+                        <div class="editor-col-label">👁 Vorschau (live)</div>
+                        <div class="editor-preview" id="editorPreview"></div>
+                    </div>
+                </div>
+                <div class="editor-actions">
+                    <span style="font-size:12px; color:#8b949e;">Format: Array mit <code style="background:#21262d;padding:1px 5px;border-radius:3px;">question</code>, <code style="background:#21262d;padding:1px 5px;border-radius:3px;">answers</code> (4 Stück) und <code style="background:#21262d;padding:1px 5px;border-radius:3px;">correct</code> (0–3)</span>
+                    <button class="btn green" id="applyQuestionsBtn" disabled>Fragen übernehmen & Spiel einrichten →</button>
+                </div>
+            </div>
+
             <!-- SETUP -->
-            <div id="setupPanel">
+            <div id="setupPanel" class="hidden">
+                <div style="margin-bottom:12px;">
+                    <button class="btn" id="backToEditorBtn" style="background:#21262d; font-size:13px;">← Fragen bearbeiten</button>
+                </div>
                 <div class="card setup-card">
                     <h2>Spiel einrichten</h2>
                     <p style="color:#8b949e; margin-bottom:14px;">Spieler scannen den QR-Code oder öffnen den Link:</p>
@@ -427,7 +513,7 @@
 
     <script>
         // ===== QUESTIONS =====
-        const questions = [
+        let questions = [
             			// Stufe 1–5: Sehr einfach
 			{ question: "Welche Zahl ist negativ?", answers: ["7", "0", "−3", "12"], correct: 2 },
 			{ question: "Welche Zahl ist die Gegenzahl von 8?", answers: ["8", "−8", "0", "16"], correct: 1 },
@@ -464,6 +550,78 @@
         let questionActive = false;
         let timerInterval;
         let timeLeft = 30;
+
+        // ===== FRAGEN-EDITOR =====
+        function initEditor() {
+            const textarea = document.getElementById('questionsEditor');
+            // Fragen als sauberes JSON vorausfüllen (ohne Kommentare)
+            const clean = questions.map(q => ({
+                question: q.question,
+                answers: q.answers,
+                correct: q.correct
+            }));
+            textarea.value = JSON.stringify(clean, null, 2);
+            updateEditorPreview();
+            textarea.addEventListener('input', updateEditorPreview);
+        }
+
+        function updateEditorPreview() {
+            const textarea  = document.getElementById('questionsEditor');
+            const previewEl = document.getElementById('editorPreview');
+            const statusEl  = document.getElementById('editorStatus');
+            const applyBtn  = document.getElementById('applyQuestionsBtn');
+            const letters   = ['A', 'B', 'C', 'D'];
+
+            try {
+                const parsed = JSON.parse(textarea.value);
+                if (!Array.isArray(parsed)) throw new Error('Muss ein Array [ … ] sein');
+                if (parsed.length === 0) throw new Error('Mindestens 1 Frage erforderlich');
+                parsed.forEach((q, i) => {
+                    if (!q.question) throw new Error(`Frage ${i+1}: "question" fehlt`);
+                    if (!Array.isArray(q.answers) || q.answers.length !== 4)
+                        throw new Error(`Frage ${i+1}: "answers" muss genau 4 Einträge haben`);
+                    if (typeof q.correct !== 'number' || q.correct < 0 || q.correct > 3)
+                        throw new Error(`Frage ${i+1}: "correct" muss 0, 1, 2 oder 3 sein`);
+                });
+
+                previewEl.innerHTML = parsed.map((q, i) => `
+                    <div class="preview-question">
+                        <div class="q-num">Frage ${i+1} / ${parsed.length}</div>
+                        <div class="q-text">${q.question}</div>
+                        <div class="preview-answers">
+                            ${q.answers.map((a, j) => `
+                                <div class="preview-answer${j === q.correct ? ' correct' : ''}">
+                                    ${letters[j]}: ${a}
+                                </div>`).join('')}
+                        </div>
+                    </div>`).join('');
+
+                statusEl.textContent = `✓ ${parsed.length} Fragen — alles korrekt`;
+                statusEl.style.color = '#3fb950';
+                textarea.classList.remove('error');
+                applyBtn.disabled = false;
+            } catch(e) {
+                previewEl.innerHTML = '<p style="color:#8b949e;padding:30px;text-align:center;">⚠ Kein gültiges Format</p>';
+                statusEl.textContent = '✗ ' + e.message;
+                statusEl.style.color = '#f85149';
+                textarea.classList.add('error');
+                applyBtn.disabled = true;
+            }
+        }
+
+        function applyQuestions() {
+            try {
+                const parsed = JSON.parse(document.getElementById('questionsEditor').value);
+                questions = parsed;
+                document.getElementById('editorPanel').classList.add('hidden');
+                document.getElementById('setupPanel').classList.remove('hidden');
+            } catch(e) { /* Button ist disabled wenn ungültig */ }
+        }
+
+        function backToEditor() {
+            document.getElementById('setupPanel').classList.add('hidden');
+            document.getElementById('editorPanel').classList.remove('hidden');
+        }
 
         // ===== BROADCAST CHANNEL (to display.html) =====
         const displayChannel = new BroadcastChannel('wwm-live');
@@ -1154,12 +1312,15 @@
         document.getElementById('nextBtn').addEventListener('click', nextQuestion);
         document.getElementById('openDisplayBtn').addEventListener('click', openDisplayWindow);
         document.getElementById('topOpenDisplayBtn').addEventListener('click', openDisplayWindow);
+        document.getElementById('applyQuestionsBtn').addEventListener('click', applyQuestions);
+        document.getElementById('backToEditorBtn').addEventListener('click', backToEditor);
 
         function openDisplayWindow() {
             window.open('display.html', 'wwm-display', 'width=1920,height=1080');
         }
 
         // ===== INIT =====
+        initEditor();
         initPeer();
     </script>
 </body>
