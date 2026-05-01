@@ -675,13 +675,30 @@
             }
 
             if (data.type === 'fiftyFiftyResponse') {
-                // Remove the wrong answers
                 const wrongIndices = data.wrongAnswers;
                 const buttons = document.querySelectorAll('.answer-btn');
+
                 wrongIndices.forEach(idx => {
                     buttons[idx].disabled = true;
                     buttons[idx].classList.add('disabled-joker');
+                    buttons[idx].classList.remove('selected');
                 });
+
+                // War die gewählte Antwort unter den entfernten? → Selektion zurücksetzen
+                if (selectedAnswer !== null && wrongIndices.includes(selectedAnswer)) {
+                    selectedAnswer = null;
+                    // Spieler muss neu wählen → Host benachrichtigen
+                    if (hostConnection && hostConnection.open) {
+                        hostConnection.send({
+                            type: 'answer', answer: null,
+                            joker: activeJokers.length > 0 ? activeJokers[activeJokers.length - 1] : null,
+                            jokers: activeJokers, phoneTarget: phoneTarget
+                        });
+                    }
+                    const statusText = document.getElementById('statusText');
+                    statusText.textContent = '🎯 50:50: Deine Antwort wurde entfernt — wähle neu!';
+                    statusText.style.color = '#ffd700';
+                }
             }
         }
 
@@ -900,9 +917,10 @@
             }
 
             // Request 50:50 help from host + live Joker-Anzeige
+            // selectedAnswer mitsenden damit Host weiss welche Antwort gewählt ist
             if (hostConnection && hostConnection.open) {
                 hostConnection.send({ type: 'jokerActivated', joker: 'fifty' });
-                hostConnection.send({ type: 'useFiftyFifty' });
+                hostConnection.send({ type: 'useFiftyFifty', selectedAnswer: selectedAnswer });
             }
         }
 

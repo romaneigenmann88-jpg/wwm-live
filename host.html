@@ -1100,7 +1100,8 @@
                         player.jokersUsed = data.jokers || [];
                         player.phoneTarget = data.phoneTarget || null;
                     }
-                    player.answered = true;
+                    // answer: null bedeutet Selektion wurde durch 50:50 zurückgesetzt
+                    player.answered = data.answer !== null && data.answer !== undefined;
                     updatePlayersList();
                 }
             }
@@ -1117,9 +1118,31 @@
             if (data.type === 'useFiftyFifty') {
                 const q = questions[currentQuestionIndex];
                 if (q) {
+                    const selected = data.selectedAnswer; // aktuell gewählte Antwort des Spielers (oder null)
                     const wrongIndices = [0,1,2,3].filter(i => i !== q.correct);
-                    const shuffled = wrongIndices.sort(() => Math.random() - 0.5);
-                    conn.send({ type: 'fiftyFiftyResponse', wrongAnswers: shuffled.slice(0, 2) });
+
+                    // Falsche Antworten ohne die gewählte (falls sie falsch ist) zuerst mischen
+                    // → die gewählte wird NICHT geschützt, kann also auch wegfallen
+                    const othersWrong = wrongIndices.filter(i => i !== selected);
+                    const shuffledOthers = othersWrong.sort(() => Math.random() - 0.5);
+
+                    let toRemove;
+                    if (selected !== null && selected !== undefined && selected !== q.correct) {
+                        // Spieler hat eine falsche Antwort gewählt:
+                        // 50% Chance dass die eigene Antwort entfernt wird
+                        if (Math.random() < 0.5) {
+                            // eigene falsche Antwort entfernen + eine weitere
+                            toRemove = [selected, shuffledOthers[0]];
+                        } else {
+                            // zwei andere falsche Antworten entfernen (eigene bleibt)
+                            toRemove = shuffledOthers.slice(0, 2);
+                        }
+                    } else {
+                        // kein Vorauswahl oder bereits richtig → zufällig 2 Falsche
+                        toRemove = wrongIndices.sort(() => Math.random() - 0.5).slice(0, 2);
+                    }
+
+                    conn.send({ type: 'fiftyFiftyResponse', wrongAnswers: toRemove });
                 }
             }
         }
