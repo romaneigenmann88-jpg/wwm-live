@@ -387,7 +387,10 @@
             <div id="editorPanel">
                 <div class="editor-header">
                     <h2>✏️ Fragen bearbeiten</h2>
-                    <span style="font-size:13px; color:#8b949e;">Passe die Fragen an, dann weiter zum Spiel.</span>
+                    <div style="display:flex; align-items:center; gap:16px;">
+                        <span style="font-size:12px; color:#8b949e;">💾 Wird automatisch im Browser gespeichert</span>
+                        <button onclick="resetToDefaultQuestions()" style="background:none; border:none; color:#8b949e; font-size:12px; cursor:pointer; text-decoration:underline;">Standardfragen laden</button>
+                    </div>
                 </div>
                 <div class="editor-layout">
                     <!-- Links: JSON-Code -->
@@ -606,6 +609,24 @@
         }
 
         // --- Textarea aus editorQuestions neu befüllen ---
+        const LS_KEY = 'wwm_saved_questions';
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(LS_KEY, JSON.stringify(editorQuestions));
+            } catch(e) { /* ignore */ }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const raw = localStorage.getItem(LS_KEY);
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                validateQuestions(parsed);
+                return parsed;
+            } catch(e) { return null; }
+        }
+
         function syncTextareaFromData() {
             if (editorSyncing) return;
             editorSyncing = true;
@@ -613,6 +634,7 @@
             ta.value = questionsToText(editorQuestions);
             ta.classList.remove('error');
             setEditorStatus(true, `✓ ${editorQuestions.length} Fragen — alles korrekt`);
+            saveToLocalStorage();   // ← bei jeder Änderung autosave
             editorSyncing = false;
         }
 
@@ -711,6 +733,7 @@
                 renderCards();
                 ta.classList.remove('error');
                 setEditorStatus(true, `✓ ${parsed.length} Fragen — alles korrekt`);
+                saveToLocalStorage();   // ← autosave beim Tippen im JSON
                 editorSyncing = false;
             } catch(e) {
                 ta.classList.add('error');
@@ -719,12 +742,30 @@
         }
 
         function initEditor() {
+            // 1. Gespeicherte Fragen aus localStorage laden (falls vorhanden)
+            // 2. Sonst: Standardfragen aus dem Code
+            const saved = loadFromLocalStorage();
+            if (saved) {
+                editorQuestions = saved;
+                setEditorStatus(true, `✓ ${saved.length} Fragen geladen (gespeichert)`);
+            } else {
+                editorQuestions = questions.map(q => ({
+                    question: q.question, answers: [...q.answers], correct: q.correct
+                }));
+            }
+            syncTextareaFromData();
+            renderCards();
+            document.getElementById('questionsEditor').addEventListener('input', onTextareaInput);
+        }
+
+        function resetToDefaultQuestions() {
+            if (!confirm('Alle gespeicherten Fragen löschen und Standardfragen laden?')) return;
+            localStorage.removeItem(LS_KEY);
             editorQuestions = questions.map(q => ({
                 question: q.question, answers: [...q.answers], correct: q.correct
             }));
             syncTextareaFromData();
             renderCards();
-            document.getElementById('questionsEditor').addEventListener('input', onTextareaInput);
         }
 
         function applyQuestions() {
