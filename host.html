@@ -657,17 +657,21 @@
                 hdr.innerHTML = `
                     <span class="q-num" style="flex:0 0 auto;">Frage ${qi+1} / ${editorQuestions.length}</span>
                     <span style="flex:0 0 auto;font-size:11px;color:#8b949e;">⏱</span>
-                    <input type="number" min="5" max="300" placeholder="30"
-                        value="${q.time && q.time !== 30 ? q.time : ''}"
-                        title="Sekunden pro Frage (leer = Standard 30 Sek)"
-                        style="width:52px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#ffd700;padding:3px 6px;font-size:12px;outline:none;text-align:center;">
-                    <span style="font-size:11px;color:#8b949e;flex:1;">Sek</span>
+                    <select title="Zeit pro Frage"
+                        style="background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#ffd700;padding:3px 6px;font-size:12px;outline:none;cursor:pointer;">
+                        <option value="10"  ${(q.time||30)===10  ?'selected':''}>10 Sek</option>
+                        <option value="20"  ${(q.time||30)===20  ?'selected':''}>20 Sek</option>
+                        <option value="30"  ${(q.time||30)===30  ?'selected':''}>30 Sek (Standard)</option>
+                        <option value="60"  ${(q.time||30)===60  ?'selected':''}>1 Min</option>
+                        <option value="90"  ${(q.time||30)===90  ?'selected':''}>1:30 Min</option>
+                        <option value="120" ${(q.time||30)===120 ?'selected':''}>2 Min</option>
+                    </select>
                     <button style="background:none;border:none;color:#f85149;cursor:pointer;font-size:11px;flex:0 0 auto;">✕ löschen</button>
                 `;
                 // Events
-                hdr.querySelector('input').addEventListener('input', e => {
+                hdr.querySelector('select').addEventListener('change', e => {
                     const val = parseInt(e.target.value);
-                    if (val && val >= 5 && val <= 300 && val !== 30) {
+                    if (val && val !== 30) {
                         editorQuestions[qi].time = val;
                     } else {
                         delete editorQuestions[qi].time;
@@ -1304,7 +1308,7 @@
 
             // Update dashboard
             document.getElementById('infoQuestion').textContent = currentQuestionIndex + 1;
-            document.getElementById('infoTimer').textContent = timeLeft;
+            document.getElementById('infoTimer').textContent = formatTime(timeLeft);
             document.getElementById('infoPrize').textContent = prizeLevels[currentQuestionIndex];
             document.getElementById('dashQuestion').textContent = q.question;
 
@@ -1355,17 +1359,23 @@
             }, animationDelay);
         }
 
+        function formatTime(sec) {
+            if (sec < 60) return String(sec);
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
         function startTimer() {
             clearInterval(timerInterval);
             const timerEl = document.getElementById('infoTimer');
 
             timerInterval = setInterval(() => {
                 timeLeft--;
-                timerEl.textContent = timeLeft;
+                timerEl.textContent = formatTime(timeLeft);
 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
-                    // Auto-reveal when timer expires
                     revealAnswer();
                 }
             }, 1000);

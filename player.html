@@ -842,6 +842,13 @@
 
         let playerTimerInterval = null;
 
+        function formatTime(sec) {
+            if (sec < 60) return String(sec);
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
         function startTimer(duration) {
             // Alten Timer stoppen falls noch aktiv
             if (playerTimerInterval) {
@@ -851,11 +858,11 @@
             let timeLeft = duration || 30;
             const timerEl = document.getElementById('timer');
             timerEl.classList.remove('warning');
-            timerEl.textContent = timeLeft;
+            timerEl.textContent = formatTime(timeLeft);
 
             playerTimerInterval = setInterval(() => {
                 timeLeft--;
-                timerEl.textContent = timeLeft;
+                timerEl.textContent = formatTime(timeLeft);
 
                 if (timeLeft <= 10) {
                     timerEl.classList.add('warning');
