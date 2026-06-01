@@ -746,7 +746,7 @@
             // Reset called indicator
             document.getElementById('calledIndicator').style.display = 'none';
 
-            startTimer();
+            startTimer(data.time || 30);
         }
 
         function updateJokersUI() {
@@ -842,13 +842,13 @@
 
         let playerTimerInterval = null;
 
-        function startTimer() {
+        function startTimer(duration) {
             // Alten Timer stoppen falls noch aktiv
             if (playerTimerInterval) {
                 clearInterval(playerTimerInterval);
             }
 
-            let timeLeft = 30;
+            let timeLeft = duration || 30;
             const timerEl = document.getElementById('timer');
             timerEl.classList.remove('warning');
             timerEl.textContent = timeLeft;

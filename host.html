@@ -579,10 +579,13 @@
         }
 
         // --- Fragen → Text (ohne äussere [ ] ) ---
+        // "time" wird nur eingetragen wenn es von 30 abweicht (saubereres JSON)
         function questionsToText(qs) {
-            return qs.map(q => JSON.stringify(
-                { question: q.question, answers: q.answers, correct: q.correct }, null, 2
-            )).join(',\n');
+            return qs.map(q => {
+                const obj = { question: q.question, answers: q.answers, correct: q.correct };
+                if (q.time && q.time !== 30) obj.time = q.time;
+                return JSON.stringify(obj, null, 2);
+            }).join(',\n');
         }
 
         function validateQuestions(qs) {
@@ -594,6 +597,8 @@
                     throw new Error(`Frage ${i+1}: "answers" braucht genau 4 Einträge`);
                 if (typeof q.correct !== 'number' || q.correct < 0 || q.correct > 3)
                     throw new Error(`Frage ${i+1}: "correct" muss 0 – 3 sein`);
+                if (q.time !== undefined && (typeof q.time !== 'number' || q.time < 5 || q.time > 300))
+                    throw new Error(`Frage ${i+1}: "time" muss zwischen 5 und 300 Sekunden sein`);
             });
         }
 
@@ -648,8 +653,32 @@
 
                 // Header
                 const hdr = document.createElement('div');
-                hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;';
+                hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;';
                 hdr.innerHTML = `<div class="q-num">Frage ${qi+1} / ${editorQuestions.length}</div>`;
+
+                // Zeit-Input
+                const timeWrap = document.createElement('label');
+                timeWrap.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;color:#8b949e;white-space:nowrap;';
+                timeWrap.innerHTML = '⏱';
+                const timeInput = document.createElement('input');
+                timeInput.type = 'number';
+                timeInput.min = 5; timeInput.max = 300;
+                timeInput.placeholder = '30';
+                timeInput.value = q.time && q.time !== 30 ? q.time : '';
+                timeInput.title = 'Sekunden pro Frage (leer = Standard 30 Sek)';
+                timeInput.style.cssText = 'width:48px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#ffd700;padding:2px 5px;font-size:11px;outline:none;text-align:center;';
+                timeInput.addEventListener('input', () => {
+                    const val = parseInt(timeInput.value);
+                    if (val && val >= 5 && val <= 300 && val !== 30) {
+                        editorQuestions[qi].time = val;
+                    } else {
+                        delete editorQuestions[qi].time;
+                    }
+                    syncTextareaFromData();
+                });
+                timeWrap.appendChild(timeInput);
+                timeWrap.insertAdjacentHTML('beforeend', ' Sek');
+                hdr.appendChild(timeWrap);
                 const del = document.createElement('button');
                 del.textContent = '✕ löschen';
                 del.style.cssText = 'background:none;border:none;color:#f85149;cursor:pointer;font-size:11px;';
@@ -775,7 +804,10 @@
             count.textContent = `(${questions.length} Fragen)`;
             list.innerHTML = questions.map((q, i) => `
                 <div style="border:1px solid #30363d; border-radius:6px; padding:10px 12px; margin-bottom:8px; background:#0d1117;">
-                    <div style="font-size:11px; color:#ffd700; font-weight:bold; margin-bottom:4px;">Frage ${i+1}</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <div style="font-size:11px; color:#ffd700; font-weight:bold;">Frage ${i+1}</div>
+                        <div style="font-size:10px; color:#8b949e;">⏱ ${q.time || 30} Sek</div>
+                    </div>
                     <div style="font-size:13px; margin-bottom:7px; line-height:1.4;">${q.question}</div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">
                         ${q.answers.map((a, j) => `
@@ -1267,7 +1299,7 @@
 
             const q = questions[currentQuestionIndex];
             questionActive = true;
-            timeLeft = 30;
+            timeLeft = q.time || 30;
 
             players.forEach(player => {
                 player.currentAnswer = null;
@@ -1322,7 +1354,8 @@
                 broadcastToPlayers({
                     type: 'question', questionNumber: currentQuestionIndex + 1,
                     question: q.question, answers: q.answers,
-                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers
+                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
+                    time: q.time || 30
                 });
 
                 updateUI();
