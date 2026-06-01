@@ -651,24 +651,22 @@
                 const card = document.createElement('div');
                 card.className = 'preview-question';
 
-                // Header
+                // Header (komplett als HTML, dann Events dranhängen)
                 const hdr = document.createElement('div');
-                hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:8px;';
-                hdr.innerHTML = `<div class="q-num">Frage ${qi+1} / ${editorQuestions.length}</div>`;
-
-                // Zeit-Input
-                const timeWrap = document.createElement('label');
-                timeWrap.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;color:#8b949e;white-space:nowrap;';
-                timeWrap.innerHTML = '⏱';
-                const timeInput = document.createElement('input');
-                timeInput.type = 'number';
-                timeInput.min = 5; timeInput.max = 300;
-                timeInput.placeholder = '30';
-                timeInput.value = q.time && q.time !== 30 ? q.time : '';
-                timeInput.title = 'Sekunden pro Frage (leer = Standard 30 Sek)';
-                timeInput.style.cssText = 'width:48px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#ffd700;padding:2px 5px;font-size:11px;outline:none;text-align:center;';
-                timeInput.addEventListener('input', () => {
-                    const val = parseInt(timeInput.value);
+                hdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+                hdr.innerHTML = `
+                    <span class="q-num" style="flex:0 0 auto;">Frage ${qi+1} / ${editorQuestions.length}</span>
+                    <span style="flex:0 0 auto;font-size:11px;color:#8b949e;">⏱</span>
+                    <input type="number" min="5" max="300" placeholder="30"
+                        value="${q.time && q.time !== 30 ? q.time : ''}"
+                        title="Sekunden pro Frage (leer = Standard 30 Sek)"
+                        style="width:52px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#ffd700;padding:3px 6px;font-size:12px;outline:none;text-align:center;">
+                    <span style="font-size:11px;color:#8b949e;flex:1;">Sek</span>
+                    <button style="background:none;border:none;color:#f85149;cursor:pointer;font-size:11px;flex:0 0 auto;">✕ löschen</button>
+                `;
+                // Events
+                hdr.querySelector('input').addEventListener('input', e => {
+                    const val = parseInt(e.target.value);
                     if (val && val >= 5 && val <= 300 && val !== 30) {
                         editorQuestions[qi].time = val;
                     } else {
@@ -676,18 +674,12 @@
                     }
                     syncTextareaFromData();
                 });
-                timeWrap.appendChild(timeInput);
-                timeWrap.insertAdjacentHTML('beforeend', ' Sek');
-                hdr.appendChild(timeWrap);
-                const del = document.createElement('button');
-                del.textContent = '✕ löschen';
-                del.style.cssText = 'background:none;border:none;color:#f85149;cursor:pointer;font-size:11px;';
-                del.addEventListener('click', () => {
+                hdr.querySelector('button').addEventListener('click', () => {
                     if (editorQuestions.length <= 1) { alert('Mindestens 1 Frage nötig!'); return; }
                     editorQuestions.splice(qi, 1);
                     syncTextareaFromData(); renderCards();
                 });
-                hdr.appendChild(del); card.appendChild(hdr);
+                card.appendChild(hdr);
 
                 // Frage-Input
                 const qInput = document.createElement('input');
