@@ -389,7 +389,7 @@
                 document.getElementById('displayPrize').textContent = data.prize;
                 document.getElementById('displayActivePlayers').textContent = data.activePlayers;
                 document.getElementById('displayQuestion').textContent = data.question;
-                document.getElementById('displayTimer').textContent = '30';
+                document.getElementById('displayTimer').textContent = formatTime(data.time || 30);
                 document.getElementById('displayTimer').classList.remove('warning');
 
                 updateLadder(data.questionNumber - 1);
@@ -422,7 +422,7 @@
                     });
 
                     // Start local timer after all answers are visible
-                    setTimeout(() => startDisplayTimer(), 600 * (data.answers.length + 1));
+                    setTimeout(() => startDisplayTimer(data.time || 30), 600 * (data.answers.length + 1));
                 }
             }
 
@@ -466,20 +466,27 @@
             }
         };
 
+        function formatTime(sec) {
+            if (sec < 60) return String(sec);
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
         // Display timer (visual only, host is authoritative)
         let displayTimerInterval = null;
         let displayTimeLeft = 30;
 
-        function startDisplayTimer() {
+        function startDisplayTimer(duration) {
             stopDisplayTimer();
-            displayTimeLeft = 30;
+            displayTimeLeft = duration || 30;
             const timerEl = document.getElementById('displayTimer');
             timerEl.classList.remove('warning');
-            timerEl.textContent = displayTimeLeft;
+            timerEl.textContent = formatTime(displayTimeLeft);
 
             displayTimerInterval = setInterval(() => {
                 displayTimeLeft--;
-                timerEl.textContent = Math.max(displayTimeLeft, 0);
+                timerEl.textContent = formatTime(Math.max(displayTimeLeft, 0));
                 if (displayTimeLeft <= 10) timerEl.classList.add('warning');
                 if (displayTimeLeft <= 0) {
                     clearInterval(displayTimerInterval);

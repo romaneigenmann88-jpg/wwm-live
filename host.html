@@ -1365,7 +1365,8 @@
             sendToDisplay({
                 type: 'question', questionNumber: currentQuestionIndex + 1,
                 question: q.question, answers: q.answers,
-                prize: prizeLevels[currentQuestionIndex], activePlayers: alive
+                prize: prizeLevels[currentQuestionIndex], activePlayers: alive,
+                time: q.time || 30
             });
 
             // Auto-play level music
