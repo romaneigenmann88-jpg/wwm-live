@@ -50,26 +50,26 @@ kann (ohne dein Konto, ohne dich), sind zwei Schritte nötig:
    - **statische TURN-Zugangsdaten**: `username` + `credential` (Passwort)
 
 ### 2b) Zugangsdaten im Code ersetzen
-Es müssen **zwei Dateien** angepasst werden: `host.html` **und** `player.html`.
+Alle Zugangsdaten stehen **ganz oben** in einem klar markierten Block –
+je einmal in `host.html` **und** in `player.html`. Du musst nur **4 Werte**
+pro Datei ändern, sonst nichts.
+
 (Auf GitHub: Datei öffnen → Stift-Symbol ✏️ „Edit" → ändern → „Commit".)
 
-In **beiden** Dateien diese Werte ersetzen:
+Suche in der Datei (Strg+F) nach **`METERED_CONFIG`**. Dort steht:
 
-**① Der API-Key (in der `fetch(...)`-Zeile):**
-```
-ALT:  https://wwm-live.metered.live/api/v1/turn/credentials?apiKey=03b24408468271208429991be1473776dcc1
-NEU:  https://IHRNAME.metered.live/api/v1/turn/credentials?apiKey=IHR-API-KEY
-```
-
-**② Die Fallback-Zugangsdaten (mehrere `turn:`/`turns:`-Zeilen):**
-```
-ALT:  username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg'
-NEU:  username: 'IHR-USERNAME',            credential: 'IHR-PASSWORT'
+```js
+const METERED_CONFIG = {
+    subdomain:  'wwm-live',                              // ← deine App-Subdomain (xxx.metered.live)
+    apiKey:     '03b24408468271208429991be1473776dcc1', // ← dein Metered API-Key
+    username:   'c4ca643ec3ef89475fda8aaf',             // ← statischer TURN-Benutzer
+    credential: '958T4scRQJRKgSyg'                      // ← statisches TURN-Passwort
+};
 ```
 
-> 💡 Tipp: In jeder Datei mit **Strg+F** nach `metered` suchen, dann sieht
-> man alle Stellen. In `player.html` kommen die Zugangsdaten auch im
-> Netzwerk-Test unten nochmal vor – am besten alle ersetzen.
+Diese 4 Werte durch die eigenen aus dem Metered-Dashboard ersetzen –
+**in beiden Dateien gleich**. Fertig. (Der Rest des Codes zieht sich die
+Werte automatisch von hier.)
 
 ### 2c) Speichern & testen
 - Nach dem Commit aktualisiert sich GitHub Pages automatisch (1–2 Min).

@@ -529,6 +529,33 @@
     </div>
 
     <script>
+        // ╔══════════════════════════════════════════════════════════════════╗
+        // ║  🔧 KONFIGURATION  –  Metered.ca TURN-Server                       ║
+        // ║                                                                    ║
+        // ║  NUR HIER ÄNDERN, wenn du ein EIGENES Metered-Konto nutzen willst.║
+        // ║  Die GLEICHEN 4 Werte müssen auch in host.html eingetragen        ║
+        // ║  werden. Schritt-für-Schritt-Anleitung: siehe WEITERGABE.md      ║
+        // ╚══════════════════════════════════════════════════════════════════╝
+        const METERED_CONFIG = {
+            subdomain:  'wwm-live',                              // deine App-Subdomain  →  xxx.metered.live
+            apiKey:     '03b24408468271208429991be1473776dcc1', // dein Metered API-Key
+            username:   'c4ca643ec3ef89475fda8aaf',             // statischer TURN-Benutzer
+            credential: '958T4scRQJRKgSyg'                      // statisches TURN-Passwort
+        };
+        // ── Ab hier nichts mehr ändern ──────────────────────────────────────
+        function buildIceServers() {
+            const u = METERED_CONFIG.username, c = METERED_CONFIG.credential;
+            return [
+                { urls: 'stun:stun.relay.metered.ca:80' },
+                { urls: 'turn:global.relay.metered.ca:80', username: u, credential: c },
+                { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: u, credential: c },
+                { urls: 'turn:global.relay.metered.ca:443', username: u, credential: c },
+                { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: u, credential: c }
+            ];
+        }
+        const METERED_CREDENTIALS_URL =
+            `https://${METERED_CONFIG.subdomain}.metered.live/api/v1/turn/credentials?apiKey=${METERED_CONFIG.apiKey}`;
+
         const prizeLevels = [
             "Fr. 50", "Fr. 100", "Fr. 200", "Fr. 300", "Fr. 500",
             "Fr. 1.000", "Fr. 2.000", "Fr. 4.000", "Fr. 8.000", "Fr. 16.000",
@@ -569,16 +596,10 @@
         async function initPeer() {
             console.log('[WWM] PeerJS wird initialisiert...');
 
-            let iceServers = [
-                { urls: 'stun:stun.relay.metered.ca:80' },
-                { urls: 'turn:global.relay.metered.ca:80', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' },
-                { urls: 'turn:global.relay.metered.ca:80?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' },
-                { urls: 'turn:global.relay.metered.ca:443', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' },
-                { urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' }
-            ];
+            let iceServers = buildIceServers();
 
             try {
-                const resp = await fetch('https://wwm-live.metered.live/api/v1/turn/credentials?apiKey=03b24408468271208429991be1473776dcc1');
+                const resp = await fetch(METERED_CREDENTIALS_URL);
                 if (resp.ok) {
                     iceServers = await resp.json();
                     console.log('[WWM] TURN-Credentials geladen:', iceServers.length, 'Server');
@@ -1233,7 +1254,7 @@
 
             // 4. TURN TCP 443
             try {
-                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' }] });
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turn:global.relay.metered.ca:443?transport=tcp', username: METERED_CONFIG.username, credential: METERED_CONFIG.credential }] });
                 pc.createDataChannel('test');
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
@@ -1254,7 +1275,7 @@
 
             // 5. TURNS (TLS 443)
             try {
-                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg' }] });
+                const pc = new RTCPeerConnection({ iceServers: [{ urls: 'turns:global.relay.metered.ca:443?transport=tcp', username: METERED_CONFIG.username, credential: METERED_CONFIG.credential }] });
                 pc.createDataChannel('test');
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
