@@ -679,6 +679,10 @@
                 buildMyLadder();
             }
 
+            if (data.type === 'questionIncoming') {
+                showQuestionIncoming(data);
+            }
+
             if (data.type === 'question') {
                 loadQuestion(data);
             }
@@ -724,6 +728,31 @@
         }
 
         // Old buildLadder/updateLadder removed - using personal ladder (buildMyLadder/updateMyLadder) instead
+
+        // Frage läuft am Beamer (Antworten werden dort eingeblendet). Auf dem Gerät
+        // noch keine Antworten – Hinweis "schau nach vorne". Kein Timer.
+        function showQuestionIncoming(data) {
+            questionActive = false;
+            selectedAnswer = null;
+            stopTimer();
+
+            document.getElementById('questionNumber').textContent = data.questionNumber;
+            document.getElementById('timer').textContent = '–';
+            document.getElementById('timer').classList.remove('warning');
+
+            const questionBox = document.getElementById('questionBox');
+            questionBox.innerHTML = `🔔 Achtung, neue Frage!<br><span style="font-size:15px;color:#a0c4ff;">👀 Schau nach vorne auf den Bildschirm</span>`;
+
+            // Alte Antworten entfernen
+            document.getElementById('answersPanel').innerHTML = '';
+
+            // Joker sperren bis die Frage da ist
+            document.querySelectorAll('.joker-btn').forEach(btn => btn.disabled = true);
+
+            const statusText = document.getElementById('statusText');
+            statusText.textContent = 'Gleich kannst du antworten …';
+            statusText.style.color = '#ffd700';
+        }
 
         function loadQuestion(data) {
             currentQuestion = data;

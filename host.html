@@ -585,6 +585,11 @@
         let questionActive = false;
         let timerInterval;
         let timeLeft = 30;
+        let revealTimeout;
+
+        // Pause (ms) zwischen dem Einblenden der einzelnen Antworten am Beamer.
+        // Grösser = mehr Lesezeit. MUSS mit dem Wert in display.html übereinstimmen.
+        const ANSWER_REVEAL_DELAY = 1800;
 
         // ===== FRAGEN-EDITOR (bidirektional) =====
         let editorQuestions = [];
@@ -1382,30 +1387,22 @@
             });
 
             document.getElementById('resultsCard').style.display = 'none';
-            document.getElementById('revealBtn').disabled = false;
+            document.getElementById('revealBtn').disabled = true;   // erst nach Reveal-Phase
             document.getElementById('nextBtn').disabled = true;
 
             timeLeft = q.time || 30;
             document.getElementById('infoTimer').textContent = formatTime(timeLeft);
 
             const alive = Array.from(players.values()).filter(p => p.alive).length;
-            const alivePlayers = Array.from(players.values())
-                .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
 
-            // An Beamer: Frage + Antworten – der Beamer blendet die Antworten
-            // einzeln mit Lesepause ein (Timer läuft synchron mit).
+            // 1) Handys: "Achtung, neue Frage – schau nach vorne!" (keine Antworten, kein Timer)
+            broadcastToPlayers({ type: 'questionIncoming', questionNumber: currentQuestionIndex + 1 });
+
+            // 2) Beamer: Frage zeigen, Antworten einzeln mit Lesepause einblenden (noch kein Timer)
             sendToDisplay({
                 type: 'question', questionNumber: currentQuestionIndex + 1,
                 question: q.question, answers: q.answers,
                 prize: prizeLevels[currentQuestionIndex], activePlayers: alive,
-                time: q.time || 30
-            });
-
-            // An Spieler: sofort Frage + Antworten – man kann gleich antworten.
-            broadcastToPlayers({
-                type: 'question', questionNumber: currentQuestionIndex + 1,
-                question: q.question, answers: q.answers,
-                prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
                 time: q.time || 30
             });
 
@@ -1415,7 +1412,28 @@
             else playSound('lvl3');
 
             updateUI();
-            startTimer();
+
+            // 3) Erst wenn alle Antworten am Beamer stehen: Timer starten +
+            //    Frage/Antworten auf die Handys + Beamer-Timer starten (alles synchron).
+            const revealDelay = ANSWER_REVEAL_DELAY * q.answers.length;
+            clearTimeout(revealTimeout);
+            revealTimeout = setTimeout(() => {
+                const alivePlayers = Array.from(players.values())
+                    .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
+
+                broadcastToPlayers({
+                    type: 'question', questionNumber: currentQuestionIndex + 1,
+                    question: q.question, answers: q.answers,
+                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
+                    time: q.time || 30
+                });
+
+                sendToDisplay({ type: 'startTimerNow' });
+
+                document.getElementById('revealBtn').disabled = false;
+                updateUI();
+                startTimer();
+            }, revealDelay);
         }
 
         function formatTime(sec) {
