@@ -415,7 +415,9 @@
                     });
                     // Timer läuft beim Host bereits – hier nicht neu starten
                 } else {
-                    // Antworten nacheinander langsam einblenden, danach Timer starten
+                    // Timer sofort starten (synchron mit den Spielern),
+                    // Antworten unabhängig davon langsam einzeln einblenden.
+                    startDisplayTimer(data.time || 30);
                     revealDisplayAnswers();
                 }
             }
@@ -467,16 +469,16 @@
             return `${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        // Antworten am Beamer nacheinander einblenden + Timer starten.
-        // ANSWER_REVEAL_DELAY = Pause zwischen den Antworten (muss zu host.html passen).
+        // Antworten am Beamer einzeln einblenden – mit Lesepause dazwischen.
+        // ANSWER_REVEAL_DELAY = Pause zwischen den Antworten. Erste sofort,
+        // dann jede weitere nach dieser Pause. (Timer läuft separat.)
         const ANSWER_REVEAL_DELAY = 1800;
         let pendingQuestionTime = 30;
         function revealDisplayAnswers() {
             const answerEls = document.querySelectorAll('.answer-display');
             answerEls.forEach((el, idx) => {
-                setTimeout(() => el.classList.add('visible'), ANSWER_REVEAL_DELAY * (idx + 1));
+                setTimeout(() => el.classList.add('visible'), ANSWER_REVEAL_DELAY * idx);
             });
-            setTimeout(() => startDisplayTimer(pendingQuestionTime), ANSWER_REVEAL_DELAY * (answerEls.length + 1));
         }
 
         // Display timer (visual only, host is authoritative)

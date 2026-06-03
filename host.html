@@ -586,10 +586,6 @@
         let timerInterval;
         let timeLeft = 30;
 
-        // Pause (ms) zwischen dem Einblenden der einzelnen Antworten am Beamer.
-        // Grösser = mehr Lesezeit pro Antwort. (Beamer nutzt denselben Wert.)
-        const ANSWER_REVEAL_DELAY = 1800;
-
         // ===== FRAGEN-EDITOR (bidirektional) =====
         let editorQuestions = [];
         let editorSyncing   = false;
@@ -1389,16 +1385,27 @@
             document.getElementById('revealBtn').disabled = false;
             document.getElementById('nextBtn').disabled = true;
 
+            timeLeft = q.time || 30;
+            document.getElementById('infoTimer').textContent = formatTime(timeLeft);
+
             const alive = Array.from(players.values()).filter(p => p.alive).length;
+            const alivePlayers = Array.from(players.values())
+                .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
 
-            // Spieler-Geräte sofort auf "neue Frage kommt" umschalten (alte Frage weg)
-            broadcastToPlayers({ type: 'questionIncoming', questionNumber: currentQuestionIndex + 1 });
-
-            // An Beamer: Frage + Antworten (Antworten werden dort langsam eingeblendet)
+            // An Beamer: Frage + Antworten – der Beamer blendet die Antworten
+            // einzeln mit Lesepause ein (Timer läuft synchron mit).
             sendToDisplay({
                 type: 'question', questionNumber: currentQuestionIndex + 1,
                 question: q.question, answers: q.answers,
                 prize: prizeLevels[currentQuestionIndex], activePlayers: alive,
+                time: q.time || 30
+            });
+
+            // An Spieler: sofort Frage + Antworten – man kann gleich antworten.
+            broadcastToPlayers({
+                type: 'question', questionNumber: currentQuestionIndex + 1,
+                question: q.question, answers: q.answers,
+                prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
                 time: q.time || 30
             });
 
@@ -1407,26 +1414,8 @@
             else if (currentQuestionIndex < 10) playSound('lvl2');
             else playSound('lvl3');
 
-            // Antworten einzeln einblenden – erst danach an Spieler senden + Timer.
-            // ANSWER_REVEAL_DELAY = Pause zwischen den Antworten am Beamer.
-            const revealDelay = ANSWER_REVEAL_DELAY * (q.answers.length + 1);
-
-            setTimeout(() => {
-                const alivePlayers = Array.from(players.values())
-                    .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
-
-                broadcastToPlayers({
-                    type: 'question', questionNumber: currentQuestionIndex + 1,
-                    question: q.question, answers: q.answers,
-                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
-                    time: q.time || 30
-                });
-
-                updateUI();
-                startTimer();
-            }, revealDelay);
-
             updateUI();
+            startTimer();
         }
 
         function formatTime(sec) {

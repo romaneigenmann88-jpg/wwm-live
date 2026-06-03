@@ -679,10 +679,6 @@
                 buildMyLadder();
             }
 
-            if (data.type === 'questionIncoming') {
-                showQuestionIncoming(data);
-            }
-
             if (data.type === 'question') {
                 loadQuestion(data);
             }
@@ -728,31 +724,6 @@
         }
 
         // Old buildLadder/updateLadder removed - using personal ladder (buildMyLadder/updateMyLadder) instead
-
-        // Zwischenzustand: Frage wird am Beamer vorgelesen, Antworten noch nicht freigegeben.
-        // Auf dem Gerät NICHT die alte Frage zeigen, sondern Hinweis "neue Frage kommt".
-        function showQuestionIncoming(data) {
-            questionActive = false;
-            selectedAnswer = null;
-            stopTimer();
-
-            document.getElementById('questionNumber').textContent = data.questionNumber;
-            document.getElementById('timer').textContent = '–';
-            document.getElementById('timer').classList.remove('warning');
-
-            const questionBox = document.getElementById('questionBox');
-            questionBox.innerHTML = `📺 Frage ${data.questionNumber} läuft am Bildschirm…<br><span style="font-size:14px;color:#a0c4ff;">Achtung, gleich kannst du antworten!</span>`;
-
-            // Alte Antworten entfernen, damit man nicht zu früh / das Alte antippt
-            document.getElementById('answersPanel').innerHTML = '';
-
-            // Joker während des Einblendens sperren
-            document.querySelectorAll('.joker-btn').forEach(btn => btn.disabled = true);
-
-            const statusText = document.getElementById('statusText');
-            statusText.textContent = '👀 Schau auf den Bildschirm!';
-            statusText.style.color = '#ffd700';
-        }
 
         function loadQuestion(data) {
             currentQuestion = data;
