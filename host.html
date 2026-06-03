@@ -477,7 +477,6 @@
                     <div class="question-preview" id="dashQuestion">—</div>
                     <div class="answers-grid" id="dashAnswers"></div>
                     <div class="controls">
-                        <button class="btn green" id="revealOptionsBtn" disabled>▶ Antworten & Timer freigeben</button>
                         <button class="btn" id="revealBtn" disabled>🔓 Auflösung zeigen</button>
                         <button class="btn green" id="nextBtn" disabled>➡ Nächste Frage</button>
                     </div>
@@ -586,6 +585,10 @@
         let questionActive = false;
         let timerInterval;
         let timeLeft = 30;
+
+        // Pause (ms) zwischen dem Einblenden der einzelnen Antworten am Beamer.
+        // Grösser = mehr Lesezeit pro Antwort. (Beamer nutzt denselben Wert.)
+        const ANSWER_REVEAL_DELAY = 1800;
 
         // ===== FRAGEN-EDITOR (bidirektional) =====
         let editorQuestions = [];
@@ -1383,19 +1386,20 @@
             });
 
             document.getElementById('resultsCard').style.display = 'none';
-            // Phase 1: nur Frage zeigen. Antworten + Timer erst nach Knopfdruck.
-            document.getElementById('revealOptionsBtn').disabled = false;
-            document.getElementById('revealBtn').disabled = true;
+            document.getElementById('revealBtn').disabled = false;
             document.getElementById('nextBtn').disabled = true;
 
             const alive = Array.from(players.values()).filter(p => p.alive).length;
 
-            // An Beamer: nur Fragetext zeigen, Antworten noch verstecken (holdAnswers)
+            // Spieler-Geräte sofort auf "neue Frage kommt" umschalten (alte Frage weg)
+            broadcastToPlayers({ type: 'questionIncoming', questionNumber: currentQuestionIndex + 1 });
+
+            // An Beamer: Frage + Antworten (Antworten werden dort langsam eingeblendet)
             sendToDisplay({
                 type: 'question', questionNumber: currentQuestionIndex + 1,
                 question: q.question, answers: q.answers,
                 prize: prizeLevels[currentQuestionIndex], activePlayers: alive,
-                time: q.time || 30, holdAnswers: true
+                time: q.time || 30
             });
 
             // Auto-play level music
@@ -1403,35 +1407,26 @@
             else if (currentQuestionIndex < 10) playSound('lvl2');
             else playSound('lvl3');
 
-            updateUI();
-            // Auf Phase 2 warten (revealOptions-Button)
-        }
+            // Antworten einzeln einblenden – erst danach an Spieler senden + Timer.
+            // ANSWER_REVEAL_DELAY = Pause zwischen den Antworten am Beamer.
+            const revealDelay = ANSWER_REVEAL_DELAY * (q.answers.length + 1);
 
-        // Phase 2: Antworten am Beamer einblenden, an Spieler senden, Timer starten
-        function revealOptions() {
-            const q = questions[currentQuestionIndex];
-            timeLeft = q.time || 30;
-            document.getElementById('infoTimer').textContent = formatTime(timeLeft);
+            setTimeout(() => {
+                const alivePlayers = Array.from(players.values())
+                    .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
 
-            document.getElementById('revealOptionsBtn').disabled = true;
-            document.getElementById('revealBtn').disabled = false;
+                broadcastToPlayers({
+                    type: 'question', questionNumber: currentQuestionIndex + 1,
+                    question: q.question, answers: q.answers,
+                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
+                    time: q.time || 30
+                });
 
-            // Beamer: Antworten jetzt einblenden + Beamer-Timer starten
-            sendToDisplay({ type: 'revealOptions' });
-
-            // Spieler: Frage mit Antworten + Timer
-            const alivePlayers = Array.from(players.values())
-                .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
-
-            broadcastToPlayers({
-                type: 'question', questionNumber: currentQuestionIndex + 1,
-                question: q.question, answers: q.answers,
-                prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
-                time: q.time || 30
-            });
+                updateUI();
+                startTimer();
+            }, revealDelay);
 
             updateUI();
-            startTimer();
         }
 
         function formatTime(sec) {
@@ -1633,7 +1628,6 @@
 
         // ===== EVENT LISTENERS =====
         document.getElementById('startGameBtn').addEventListener('click', startGame);
-        document.getElementById('revealOptionsBtn').addEventListener('click', revealOptions);
         document.getElementById('revealBtn').addEventListener('click', revealAnswer);
         document.getElementById('nextBtn').addEventListener('click', nextQuestion);
         document.getElementById('openDisplayBtn').addEventListener('click', openDisplayWindow);

@@ -405,7 +405,6 @@
                     answersEl.appendChild(div);
                 });
 
-                // Zeit für die spätere Freigabe (Phase 2) merken
                 pendingQuestionTime = data.time || 30;
 
                 if (data.instant) {
@@ -415,18 +414,10 @@
                         if (el) el.classList.add('visible');
                     });
                     // Timer läuft beim Host bereits – hier nicht neu starten
-                } else if (data.holdAnswers) {
-                    // Phase 1: nur Frage zeigen, Antworten bleiben verdeckt, kein Timer.
-                    // Warten auf 'revealOptions'.
                 } else {
-                    // (Fallback, falls ohne holdAnswers gesendet) sofort einblenden
+                    // Antworten nacheinander langsam einblenden, danach Timer starten
                     revealDisplayAnswers();
                 }
-            }
-
-            if (data.type === 'revealOptions') {
-                // Phase 2: Antworten nacheinander einblenden + Beamer-Timer starten
-                revealDisplayAnswers();
             }
 
             if (data.type === 'timerStop') {
@@ -476,14 +467,16 @@
             return `${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        // Antworten am Beamer nacheinander einblenden + Timer starten
+        // Antworten am Beamer nacheinander einblenden + Timer starten.
+        // ANSWER_REVEAL_DELAY = Pause zwischen den Antworten (muss zu host.html passen).
+        const ANSWER_REVEAL_DELAY = 1800;
         let pendingQuestionTime = 30;
         function revealDisplayAnswers() {
             const answerEls = document.querySelectorAll('.answer-display');
             answerEls.forEach((el, idx) => {
-                setTimeout(() => el.classList.add('visible'), 600 * (idx + 1));
+                setTimeout(() => el.classList.add('visible'), ANSWER_REVEAL_DELAY * (idx + 1));
             });
-            setTimeout(() => startDisplayTimer(pendingQuestionTime), 600 * (answerEls.length + 1));
+            setTimeout(() => startDisplayTimer(pendingQuestionTime), ANSWER_REVEAL_DELAY * (answerEls.length + 1));
         }
 
         // Display timer (visual only, host is authoritative)
