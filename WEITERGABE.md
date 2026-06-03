@@ -1,142 +1,118 @@
-# 🎁 WWM Live an eine andere Lehrperson weitergeben
+# 🎁 WWM Live komplett unabhängig weitergeben
 
-> **Wichtig vorweg:** Du brauchst **keinen eigenen Server**!
-> Das Spiel läuft komplett im Browser über Cloud-Dienste
-> (PeerJS für die Verbindung + Metered.ca als Relais).
-> Der „Server" ist GitHub Pages – der läuft schon.
+> **Erst das Wichtigste, damit kein Missverständnis entsteht:**
+>
+> Es gibt **keinen Server, den du auf deinem Computer laufen lassen musst.**
+> Das Spiel nutzt zwei **Cloud-Dienste**, die rund um die Uhr von anderen
+> betrieben werden:
+>
+> | Dienst | Wofür | Wer betreibt ihn? |
+> |--------|-------|-------------------|
+> | **PeerJS Cloud** (`0.peerjs.com`) | verbindet Host & Spieler | öffentlich, gratis, kein Konto |
+> | **Metered.ca** (TURN-Relais) | leitet Verbindung weiter, wenn nötig | Metered.ca – **läuft 24/7 in deren Cloud** |
+>
+> Bei Metered.ca hast du nur ein **Konto** mit einem **API-Schlüssel**.
+> Dieser Schlüssel steht im Code. Das ist das Einzige, was an *dich*
+> persönlich gebunden ist – sonst nichts.
 
-Es gibt drei Möglichkeiten – von der einfachsten bis zur unabhängigsten.
+Damit eine andere Lehrperson das Spiel **völlig unabhängig** einsetzen
+kann (ohne dein Konto, ohne dich), sind zwei Schritte nötig:
 
----
-
-## ✅ Variante 1: Einfach den Link weitergeben (am einfachsten)
-
-Die schnellste Art. Die andere Lehrperson muss gar nichts installieren.
-
-**So geht's:**
-1. Diesen Link weitergeben (z. B. per Mail oder Teams):
-   ```
-   https://romaneigenmann88-jpg.github.io/wwm-live/host.html
-   ```
-2. Die Lehrperson öffnet den Link im Browser (Chrome/Edge empfohlen).
-3. Im **Fragen-Editor** ihre eigenen Fragen eingeben → „Fragen übernehmen".
-4. Spiel starten – fertig!
-
-**Gut zu wissen:**
-- ✔️ Kein Konto, keine Installation, kein Server nötig.
-- ✔️ Die eingegebenen Fragen werden **im Browser dieser Person** gespeichert
-  (localStorage) – bleiben also bis zum nächsten Mal erhalten.
-- ⚠️ Die Fragen sind **pro Gerät/Browser**. Wechselt sie den Computer,
-  muss sie die Fragen neu einfügen (am besten den JSON-Code aufbewahren).
-- ⚠️ Es wird mein Metered-Relais-Konto mitbenutzt. Für gelegentlichen
-  Schuleinsatz völlig okay. (Nur bei sehr intensiver Dauernutzung könnte
-  das Gratis-Kontingent knapp werden → dann Variante 2 oder 3.)
+1. **Eigene Kopie der App** (GitHub-Fork → eigener Link)
+2. **Eigenes Metered.ca-Konto** → eigene Zugangsdaten in den Code eintragen
 
 ---
 
-## 🍴 Variante 2: Eigene Kopie auf GitHub (unabhängig)
+## Schritt 1: Eigene Kopie auf GitHub (eigener Link)
 
-Wenn die Lehrperson eine **komplett eigene Version** mit eigenem Link will.
-
-**So geht's:**
-1. Die Person erstellt ein kostenloses GitHub-Konto: https://github.com/signup
-2. Auf meine Projektseite gehen:
-   ```
-   https://github.com/romaneigenmann88-jpg/wwm-live
-   ```
-3. Oben rechts auf **„Fork"** klicken → erstellt eine eigene Kopie.
+1. Kostenloses GitHub-Konto erstellen: https://github.com/signup
+2. Meine Projektseite öffnen:
+   `https://github.com/romaneigenmann88-jpg/wwm-live`
+3. Oben rechts **„Fork"** klicken → erstellt eine eigene Kopie.
 4. Im eigenen Fork: **Settings → Pages**
-   - Bei „Source" den Branch **`master`** wählen, Ordner **`/ (root)`**.
-   - **Save** klicken.
-5. Nach 1–2 Minuten ist die eigene Version online unter:
-   ```
-   https://IHR-BENUTZERNAME.github.io/wwm-live/host.html
-   ```
+   - „Source": Branch **`master`**, Ordner **`/ (root)`** → **Save**.
+5. Nach 1–2 Minuten ist die eigene Version online:
+   `https://IHR-BENUTZERNAME.github.io/wwm-live/host.html`
 
-**Gut zu wissen:**
-- ✔️ Eigener Link, eigene Kopie – unabhängig von mir.
-- ✔️ Sie kann eigene Fragen sogar fest im Code hinterlegen.
-- ⚠️ Es wird weiterhin mein Metered-Relais genutzt. Für völlige
-  Unabhängigkeit siehe Abschnitt „Eigenes Relais" weiter unten.
+✔️ Jetzt hat die Person eine eigene App und einen eigenen Link.
+⚠️ Sie nutzt aber noch **dein** Metered-Konto → weiter mit Schritt 2.
 
 ---
 
-## 💻 Variante 3: Lokal vom eigenen Computer starten
+## Schritt 2: Eigenes Metered.ca-Konto (volle Unabhängigkeit)
 
-Wenn kein GitHub gewünscht ist und alles vom eigenen Notebook laufen soll.
-(Internet wird trotzdem benötigt – wegen PeerJS/Relais.)
+### 2a) Konto + Zugangsdaten holen
+1. Kostenlos registrieren: https://www.metered.ca/ → „Sign up"
+2. Im Dashboard einen **TURN-Server-Service** anlegen.
+3. Dort findet man:
+   - eine **App-Subdomain**, z. B. `ihrname.metered.live`
+   - einen **API-Key**, z. B. `abcd1234...`
+   - **statische TURN-Zugangsdaten**: `username` + `credential` (Passwort)
 
-**So geht's:**
-1. Auf meiner GitHub-Seite: grüner Button **„Code" → „Download ZIP"**.
-2. ZIP entpacken (z. B. nach `Dokumente/wwm-live`).
-3. Einen einfachen Webserver starten (nötig, weil die Verbindungen
-   beim direkten Öffnen der Datei sonst blockiert werden):
+### 2b) Zugangsdaten im Code ersetzen
+Es müssen **zwei Dateien** angepasst werden: `host.html` **und** `player.html`.
+(Auf GitHub: Datei öffnen → Stift-Symbol ✏️ „Edit" → ändern → „Commit".)
 
-   **Windows (mit Python):**
-   - Doppelklick auf `start-server.bat`
+In **beiden** Dateien diese Werte ersetzen:
 
-   **Mac/Linux:**
-   - Terminal im Ordner öffnen, dann:
-     ```
-     ./start-server.sh
-     ```
+**① Der API-Key (in der `fetch(...)`-Zeile):**
+```
+ALT:  https://wwm-live.metered.live/api/v1/turn/credentials?apiKey=03b24408468271208429991be1473776dcc1
+NEU:  https://IHRNAME.metered.live/api/v1/turn/credentials?apiKey=IHR-API-KEY
+```
 
-   **Ohne Python – Alternative mit VS Code:**
-   - Erweiterung „Live Server" installieren → Rechtsklick auf
-     `host.html` → „Open with Live Server".
-4. Im Browser öffnen:
-   ```
-   http://localhost:8080/host.html
-   ```
+**② Die Fallback-Zugangsdaten (mehrere `turn:`/`turns:`-Zeilen):**
+```
+ALT:  username: 'c4ca643ec3ef89475fda8aaf', credential: '958T4scRQJRKgSyg'
+NEU:  username: 'IHR-USERNAME',            credential: 'IHR-PASSWORT'
+```
 
-**Gut zu wissen:**
-- ✔️ Alle Dateien liegen lokal, volle Kontrolle.
-- ⚠️ Etwas mehr Aufwand (Python oder VS Code nötig).
-- ⚠️ Der Computer mit dem Server muss während des Spiels laufen.
+> 💡 Tipp: In jeder Datei mit **Strg+F** nach `metered` suchen, dann sieht
+> man alle Stellen. In `player.html` kommen die Zugangsdaten auch im
+> Netzwerk-Test unten nochmal vor – am besten alle ersetzen.
+
+### 2c) Speichern & testen
+- Nach dem Commit aktualisiert sich GitHub Pages automatisch (1–2 Min).
+- `host.html` öffnen → unten **„Netzwerk-Diagnose anzeigen"** →
+  **„Netzwerk-Test starten"**. Wenn „TURN-Server: OK" erscheint, passt alles.
+
+✔️ Jetzt ist die Person komplett unabhängig – eigener Link, eigenes Konto.
 
 ---
 
-## 🔁 Fragen mitgeben (bei allen Varianten)
+## Schritt 3: Fragen mitgeben
 
-Am einfachsten gibst du fertige Fragen so weiter:
-
-1. Bei dir im **Fragen-Editor** den **JSON-Code links** komplett markieren
-   und kopieren.
-2. Diesen Text der anderen Person schicken (Mail, Datei, Chat).
+Am einfachsten so:
+1. Bei dir im **Fragen-Editor** den **JSON-Code links** komplett markieren & kopieren.
+2. Der Person schicken (Mail/Datei/Chat).
 3. Sie fügt ihn bei sich im Editor links ein → Vorschau erscheint sofort.
 
-> Der Code funktioniert mit oder ohne äussere `[ ]` – auch KI-generierte
-> Fragen lassen sich direkt einfügen.
+Der Code funktioniert mit oder ohne äussere `[ ]` – auch KI-Fragen direkt einfügbar.
 
 ---
 
-## 🔧 Optional: Eigenes Relais-Konto (für volle Unabhängigkeit)
+## Brauche ich Schritt 2 wirklich?
 
-Nur nötig bei sehr intensiver Nutzung oder wenn die andere Person gar
-nichts von meinem Konto mitbenutzen soll.
+| Situation | Empfehlung |
+|-----------|------------|
+| Gelegentlicher Einsatz, Kollegin im selben Haus | Schritt 2 **optional** – dein Konto mitnutzen reicht meist |
+| Person soll dauerhaft & ganz eigenständig sein | Schritt 2 **ja** – eigenes Metered-Konto |
+| Mehrere Klassen gleichzeitig, intensive Nutzung | Schritt 2 **ja** – sonst teilt ihr euch das Gratis-Kontingent |
 
-1. Kostenloses Konto bei https://www.metered.ca/ erstellen.
-2. Dort einen TURN-Service anlegen → eigenen **API-Key** + Zugangsdaten erhalten.
-3. In `host.html` die Stelle mit `metered.ca` / `apiKey=...` suchen und
-   die eigenen Zugangsdaten eintragen.
-
-(Für den normalen Schuleinsatz ist das **nicht** nötig.)
+Das Metered-Gratis-Kontingent (mehrere GB/Monat) reicht für normalen
+Unterricht locker. „Volle Unabhängigkeit" heisst v. a.: getrennte Konten,
+getrennte Kontingente, kein Zugriff auf deine Daten.
 
 ---
 
-## ❓ Häufige Fragen
+## Häufige Fragen
 
-**Brauche ich einen Server?**
-→ Nein. Nur für Variante 3 (lokal) einen einfachen Webserver auf dem
-eigenen Rechner. Bei Variante 1 und 2 läuft alles über GitHub Pages.
+**Muss bei mir ein Server / mein Computer laufen?**
+→ Nein. Beide Dienste (PeerJS + Metered) laufen in fremder Cloud.
+Sobald die App auf GitHub Pages liegt, läuft alles ohne dich.
 
 **Müssen alle im gleichen WLAN sein?**
-→ Nein. Dank Cloud-Relais funktioniert es auch über verschiedene Netze.
-Gleiches WLAN ist aber stabiler und schneller.
+→ Nein, dank Cloud-Relais. Gleiches WLAN ist aber stabiler/schneller.
 
 **Welcher Browser?**
-→ Chrome oder Edge empfohlen (Host, Beamer und Spieler).
-
-**Empfehlung?**
-→ Für die meisten Lehrpersonen reicht **Variante 1** (Link weitergeben)
-vollkommen aus.
+→ Chrome oder Edge (für Host, Beamer und Spieler).
