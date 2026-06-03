@@ -1067,8 +1067,12 @@
             const ownResult = data.results ? data.results.find(r => r.name === playerName) : null;
 
             // Track personal result (works in both alive and dead mode)
-            // Wenn der Host ein Ergebnis liefert (z.B. via Joker gerettet), das nutzen.
-            const wasCorrect = ownResult ? ownResult.correct : (selectedAnswer === correctAnswer);
+            // - Solange man lebt: Host-Ergebnis nutzen (berücksichtigt Joker-Überleben).
+            // - Im roten Modus (ausgeschieden): lokalen Vergleich nutzen, da der Host
+            //   für ausgeschiedene Spieler immer correct:false liefert (status 'dead').
+            const wasCorrect = (isAlive && ownResult && ownResult.status !== 'dead')
+                ? ownResult.correct
+                : (selectedAnswer === correctAnswer);
             myResults.push({
                 questionNum: currentQuestion.questionNumber,
                 correct: wasCorrect,

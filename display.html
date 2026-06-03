@@ -405,25 +405,28 @@
                     answersEl.appendChild(div);
                 });
 
+                // Zeit für die spätere Freigabe (Phase 2) merken
+                pendingQuestionTime = data.time || 30;
+
                 if (data.instant) {
-                    // Instant mode: show all answers immediately (for re-sync)
+                    // Instant mode (Re-Sync mitten im Spiel): alle Antworten sofort zeigen
                     data.answers.forEach((_, idx) => {
                         const el = document.getElementById('displayAnswer' + idx);
                         if (el) el.classList.add('visible');
                     });
-                    // Don't start timer on instant sync (host timer is already running)
+                    // Timer läuft beim Host bereits – hier nicht neu starten
+                } else if (data.holdAnswers) {
+                    // Phase 1: nur Frage zeigen, Antworten bleiben verdeckt, kein Timer.
+                    // Warten auf 'revealOptions'.
                 } else {
-                    // Normal mode: reveal answers one by one like the original show
-                    data.answers.forEach((_, idx) => {
-                        setTimeout(() => {
-                            const el = document.getElementById('displayAnswer' + idx);
-                            if (el) el.classList.add('visible');
-                        }, 600 * (idx + 1));
-                    });
-
-                    // Start local timer after all answers are visible
-                    setTimeout(() => startDisplayTimer(data.time || 30), 600 * (data.answers.length + 1));
+                    // (Fallback, falls ohne holdAnswers gesendet) sofort einblenden
+                    revealDisplayAnswers();
                 }
+            }
+
+            if (data.type === 'revealOptions') {
+                // Phase 2: Antworten nacheinander einblenden + Beamer-Timer starten
+                revealDisplayAnswers();
             }
 
             if (data.type === 'timerStop') {
@@ -471,6 +474,16 @@
             const m = Math.floor(sec / 60);
             const s = sec % 60;
             return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // Antworten am Beamer nacheinander einblenden + Timer starten
+        let pendingQuestionTime = 30;
+        function revealDisplayAnswers() {
+            const answerEls = document.querySelectorAll('.answer-display');
+            answerEls.forEach((el, idx) => {
+                setTimeout(() => el.classList.add('visible'), 600 * (idx + 1));
+            });
+            setTimeout(() => startDisplayTimer(pendingQuestionTime), 600 * (answerEls.length + 1));
         }
 
         // Display timer (visual only, host is authoritative)

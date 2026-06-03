@@ -477,6 +477,7 @@
                     <div class="question-preview" id="dashQuestion">—</div>
                     <div class="answers-grid" id="dashAnswers"></div>
                     <div class="controls">
+                        <button class="btn green" id="revealOptionsBtn" disabled>▶ Antworten & Timer freigeben</button>
                         <button class="btn" id="revealBtn" disabled>🔓 Auflösung zeigen</button>
                         <button class="btn green" id="nextBtn" disabled>➡ Nächste Frage</button>
                     </div>
@@ -1382,17 +1383,19 @@
             });
 
             document.getElementById('resultsCard').style.display = 'none';
-            document.getElementById('revealBtn').disabled = false;
+            // Phase 1: nur Frage zeigen. Antworten + Timer erst nach Knopfdruck.
+            document.getElementById('revealOptionsBtn').disabled = false;
+            document.getElementById('revealBtn').disabled = true;
             document.getElementById('nextBtn').disabled = true;
 
             const alive = Array.from(players.values()).filter(p => p.alive).length;
 
-            // Send to display FIRST (animation takes ~3s)
+            // An Beamer: nur Fragetext zeigen, Antworten noch verstecken (holdAnswers)
             sendToDisplay({
                 type: 'question', questionNumber: currentQuestionIndex + 1,
                 question: q.question, answers: q.answers,
                 prize: prizeLevels[currentQuestionIndex], activePlayers: alive,
-                time: q.time || 30
+                time: q.time || 30, holdAnswers: true
             });
 
             // Auto-play level music
@@ -1400,24 +1403,35 @@
             else if (currentQuestionIndex < 10) playSound('lvl2');
             else playSound('lvl3');
 
-            // Delay sending to players + starting timer to sync with display animation
-            // Display animation: 600ms * (4 answers + 1) = 3000ms
-            const animationDelay = 600 * (q.answers.length + 1);
+            updateUI();
+            // Auf Phase 2 warten (revealOptions-Button)
+        }
 
-            setTimeout(() => {
-                const alivePlayers = Array.from(players.values())
-                    .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
+        // Phase 2: Antworten am Beamer einblenden, an Spieler senden, Timer starten
+        function revealOptions() {
+            const q = questions[currentQuestionIndex];
+            timeLeft = q.time || 30;
+            document.getElementById('infoTimer').textContent = formatTime(timeLeft);
 
-                broadcastToPlayers({
-                    type: 'question', questionNumber: currentQuestionIndex + 1,
-                    question: q.question, answers: q.answers,
-                    prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
-                    time: q.time || 30
-                });
+            document.getElementById('revealOptionsBtn').disabled = true;
+            document.getElementById('revealBtn').disabled = false;
 
-                updateUI();
-                startTimer();
-            }, animationDelay);
+            // Beamer: Antworten jetzt einblenden + Beamer-Timer starten
+            sendToDisplay({ type: 'revealOptions' });
+
+            // Spieler: Frage mit Antworten + Timer
+            const alivePlayers = Array.from(players.values())
+                .filter(p => p.alive).map(p => ({ id: p.id, name: p.name }));
+
+            broadcastToPlayers({
+                type: 'question', questionNumber: currentQuestionIndex + 1,
+                question: q.question, answers: q.answers,
+                prize: prizeLevels[currentQuestionIndex], alivePlayers: alivePlayers,
+                time: q.time || 30
+            });
+
+            updateUI();
+            startTimer();
         }
 
         function formatTime(sec) {
@@ -1619,6 +1633,7 @@
 
         // ===== EVENT LISTENERS =====
         document.getElementById('startGameBtn').addEventListener('click', startGame);
+        document.getElementById('revealOptionsBtn').addEventListener('click', revealOptions);
         document.getElementById('revealBtn').addEventListener('click', revealAnswer);
         document.getElementById('nextBtn').addEventListener('click', nextQuestion);
         document.getElementById('openDisplayBtn').addEventListener('click', openDisplayWindow);
