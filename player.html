@@ -973,7 +973,7 @@
 
             // Show persistent message until answer is selected
             const statusText = document.getElementById('statusText');
-            statusText.textContent = '👥 Publikumsjoker aktiv! Wähle trotzdem eine Antwort — du bist sicher wenn DEINE Antwort ODER die Mehrheit richtig ist!';
+            statusText.textContent = '👥 Publikumsjoker aktiv! Du bist sicher wenn die Mehrheit richtig liegt. Du kannst zusätzlich selbst wählen, musst aber nicht.';
             statusText.style.color = '#ffd700';
         }
 
@@ -1019,9 +1019,10 @@
             document.getElementById('phoneBtn').classList.add('active');
             document.getElementById('phoneModal').classList.remove('active');
 
-            // Live Joker-Anzeige beim Host
+            // Live Joker-Anzeige beim Host – phoneTarget mitsenden, damit es
+            // auch ohne eigene Antwort beim Host ankommt.
             if (hostConnection && hostConnection.open) {
-                hostConnection.send({ type: 'jokerActivated', joker: 'phone' });
+                hostConnection.send({ type: 'jokerActivated', joker: 'phone', phoneTarget: phoneTarget });
             }
 
             // Re-send answer with updated joker info if already selected
@@ -1031,7 +1032,7 @@
 
             // Show non-blocking message
             const statusText = document.getElementById('statusText');
-            statusText.textContent = '📞 Telefonjoker aktiv! Wähle deine Antwort!';
+            statusText.textContent = '📞 Telefonjoker aktiv! Du verlässt dich auf den Angerufenen — du kannst zusätzlich selbst wählen, musst aber nicht.';
             statusText.style.color = '#ffd700';
         }
 
@@ -1062,8 +1063,12 @@
                 buttons[selectedAnswer].classList.add('wrong');
             }
 
+            // Eigenes Ergebnis vom Host (berücksichtigt Joker-Überleben)
+            const ownResult = data.results ? data.results.find(r => r.name === playerName) : null;
+
             // Track personal result (works in both alive and dead mode)
-            const wasCorrect = selectedAnswer === correctAnswer;
+            // Wenn der Host ein Ergebnis liefert (z.B. via Joker gerettet), das nutzen.
+            const wasCorrect = ownResult ? ownResult.correct : (selectedAnswer === correctAnswer);
             myResults.push({
                 questionNum: currentQuestion.questionNumber,
                 correct: wasCorrect,
@@ -1075,8 +1080,6 @@
             // Update personal ladder
             updateMyLadder();
 
-            // Check own result from host (only matters if alive)
-            const ownResult = data.results ? data.results.find(r => r.name === playerName) : null;
             const statusBar = document.getElementById('statusBar');
             const statusText = document.getElementById('statusText');
 

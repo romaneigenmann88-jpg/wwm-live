@@ -1193,7 +1193,11 @@
                 const player = players.get(conn.peer);
                 if (player && player.alive) {
                     player.activeJokerThisRound = data.joker;
+                    if (!player.jokersThisRound) player.jokersThisRound = [];
+                    if (!player.jokersThisRound.includes(data.joker)) player.jokersThisRound.push(data.joker);
                     if (player.remainingJokers) player.remainingJokers[data.joker] = false;
+                    // Telefonjoker-Ziel auch ohne eigene Antwort merken
+                    if (data.joker === 'phone' && data.phoneTarget) player.phoneTarget = data.phoneTarget;
                     updatePlayersList();
                 }
             }
@@ -1359,6 +1363,7 @@
                 player.phoneTarget = null;
                 player.answered = false;
                 player.activeJokerThisRound = null;
+                player.jokersThisRound = [];
             });
 
             // Update dashboard
@@ -1462,20 +1467,29 @@
                     results.push({ name: player.name, status: 'dead', answer: '-', correct: false });
                     return;
                 }
-                if (!player.answered) {
+
+                // Eingesetzte Joker aus Antwort UND aus jokerActivated-Meldungen zusammenführen
+                const answeredJokers = player.jokersUsed || (player.jokerUsed ? [player.jokerUsed] : []);
+                const roundJokers = player.jokersThisRound || [];
+                const usedJokers = [...new Set([...answeredJokers, ...roundJokers])];
+                const usedAudience = usedJokers.includes('audience');
+                const usedPhone = usedJokers.includes('phone');
+                const usedFifty = usedJokers.includes('fifty');
+
+                const hasOwnAnswer = player.answered && player.currentAnswer !== null && player.currentAnswer !== undefined;
+
+                // Ohne eigene Antwort raus – AUSSER Publikums-/Telefonjoker wurde genutzt
+                // (dann kann man sich allein auf Joker verlassen).
+                if (!hasOwnAnswer && !usedAudience && !usedPhone) {
                     player.alive = false;
                     results.push({ name: player.name, status: 'timeout', answer: 'Keine Antwort', correct: false });
                     return;
                 }
 
                 let isCorrect = false, explanation = '';
-                const usedJokers = player.jokersUsed || (player.jokerUsed ? [player.jokerUsed] : []);
-                const usedAudience = usedJokers.includes('audience');
-                const usedPhone = usedJokers.includes('phone');
-                const usedFifty = usedJokers.includes('fifty');
+                const ownCorrect = hasOwnAnswer && player.currentAnswer === correctAnswer;
 
                 if (usedAudience) {
-                    const ownCorrect = player.currentAnswer === correctAnswer;
                     // Snapshot verwenden statt live players.values() – damit wird der
                     // alive-Status aus dem Moment VOR der Auswertung genutzt.
                     const aliveAnswers = Array.from(snapshotAnswers.entries())
@@ -1493,24 +1507,28 @@
                     isCorrect = ownCorrect || majorityCorrect;
                     if (ownCorrect && majorityCorrect) explanation = '(Publikum + Eigene ✓)';
                     else if (ownCorrect) explanation = '(Eigene Antwort ✓)';
-                    else if (majorityCorrect) explanation = '(Mehrheit hat gerettet!)';
-                    else explanation = '(Beides falsch)';
+                    else if (majorityCorrect) explanation = hasOwnAnswer ? '(Mehrheit hat gerettet!)' : '(👥 nur Publikum)';
+                    else explanation = hasOwnAnswer ? '(Beides falsch)' : '(👥 Publikum falsch)';
                 } else if (usedPhone && player.phoneTarget) {
                     const target = players.get(player.phoneTarget);
-                    if (target && target.alive && target.answered) {
+                    if (target && target.answered && target.currentAnswer !== null && target.currentAnswer !== undefined) {
                         if (target.currentAnswer === correctAnswer) {
                             isCorrect = true;
                             explanation = `(📞 ${target.name} ✓)`;
+                        } else if (hasOwnAnswer) {
+                            isCorrect = ownCorrect;
+                            explanation = `(📞 ${target.name} ✗ → Eigene Wahl)`;
                         } else {
-                            isCorrect = player.currentAnswer === correctAnswer;
-                            explanation = `(📞 Eigene Wahl)`;
+                            isCorrect = false;
+                            explanation = `(📞 ${target.name} ✗ — keine eigene Wahl)`;
                         }
                     } else {
-                        isCorrect = player.currentAnswer === correctAnswer;
-                        explanation = '(📞 Nicht verfügbar)';
+                        // Angerufener hat selbst nicht geantwortet
+                        isCorrect = ownCorrect;
+                        explanation = hasOwnAnswer ? '(📞 Angerufener ohne Antwort → Eigene Wahl)' : '(📞 Angerufener ohne Antwort)';
                     }
                 } else {
-                    isCorrect = player.currentAnswer === correctAnswer;
+                    isCorrect = ownCorrect;
                     if (usedFifty) explanation = '(50:50)';
                 }
 
@@ -1519,7 +1537,7 @@
                 results.push({
                     name: player.name,
                     status: isCorrect ? 'correct' : 'wrong',
-                    answer: String.fromCharCode(65 + player.currentAnswer),
+                    answer: hasOwnAnswer ? String.fromCharCode(65 + player.currentAnswer) : '—',
                     correct: isCorrect,
                     explanation: explanation
                 });
