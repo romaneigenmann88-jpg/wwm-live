@@ -623,6 +623,10 @@
             }
 
             peer = new Peer(null, {
+                host: 'wwm-peer-broker.onrender.com',
+                port: 443,
+                path: '/',
+                secure: true,
                 debug: 2,
                 config: { iceServers: iceServers }
             });
