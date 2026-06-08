@@ -536,6 +536,14 @@
         // ║  Die GLEICHEN 4 Werte müssen auch in host.html eingetragen        ║
         // ║  werden. Schritt-für-Schritt-Anleitung: siehe WEITERGABE.md      ║
         // ╚══════════════════════════════════════════════════════════════════╝
+        // Dein eigener PeerJS-Broker (siehe WEITERGABE.md). Nur den host-Wert anpassen.
+        const PEER_CONFIG = {
+            host:   'wwm-peer-broker.onrender.com',  // deine Render-Broker-URL (ohne https:// und ohne /)
+            port:   443,
+            path:   '/',
+            secure: true
+        };
+
         const METERED_CONFIG = {
             subdomain:  'wwm-live',                              // deine App-Subdomain  →  xxx.metered.live
             apiKey:     '03b24408468271208429991be1473776dcc1', // dein Metered API-Key
@@ -623,10 +631,10 @@
             }
 
             peer = new Peer(null, {
-                host: 'wwm-peer-broker.onrender.com',
-                port: 443,
-                path: '/',
-                secure: true,
+                host: PEER_CONFIG.host,
+                port: PEER_CONFIG.port,
+                path: PEER_CONFIG.path,
+                secure: PEER_CONFIG.secure,
                 debug: 2,
                 config: { iceServers: iceServers }
             });
