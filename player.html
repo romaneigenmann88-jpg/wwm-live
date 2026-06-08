@@ -593,6 +593,20 @@
             `;
         }
 
+        let reconnectDelay = 1000, reconnectTimer = null;
+        function scheduleReconnect() {
+            if (reconnectTimer) return;
+            if (!peer || peer.destroyed) return;
+            console.log('[WWM] Reconnect in ' + (reconnectDelay / 1000) + 's...');
+            reconnectTimer = setTimeout(function() {
+                reconnectTimer = null;
+                if (peer && !peer.destroyed && peer.disconnected) {
+                    try { peer.reconnect(); } catch(e) { console.error('[WWM] Reconnect-Fehler:', e.message); }
+                }
+                reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+            }, reconnectDelay);
+        }
+
         async function initPeer() {
             console.log('[WWM] PeerJS wird initialisiert...');
 
@@ -614,6 +628,8 @@
             });
 
             peer.on('open', function(id) {
+                reconnectDelay = 1000;
+                if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
                 console.log('[WWM] Player Peer-ID:', id);
             });
 
@@ -623,8 +639,8 @@
             });
 
             peer.on('disconnected', function() {
-                console.log('[WWM] Vom Server getrennt, reconnecting...');
-                peer.reconnect();
+                console.log('[WWM] Vom Server getrennt - Reconnect mit Backoff...');
+                scheduleReconnect();
             });
         }
 

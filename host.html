@@ -1001,6 +1001,20 @@
             }
         }
 
+        let reconnectDelay = 1000, reconnectTimer = null;
+        function scheduleReconnect() {
+            if (reconnectTimer) return;                 // schon geplant
+            if (!peer || peer.destroyed) return;        // nichts mehr zu tun
+            logDebug('Reconnect in ' + (reconnectDelay / 1000) + 's...');
+            reconnectTimer = setTimeout(function() {
+                reconnectTimer = null;
+                if (peer && !peer.destroyed && peer.disconnected) {
+                    try { peer.reconnect(); } catch(e) { logDebug('Reconnect-Fehler: ' + e.message); }
+                }
+                reconnectDelay = Math.min(reconnectDelay * 2, 30000);  // max 30s
+            }, reconnectDelay);
+        }
+
         async function initPeer() {
             logDebug('PeerJS wird initialisiert...');
             logDebug('Lade TURN-Credentials...');
@@ -1024,6 +1038,8 @@
 
             peer.on('open', function(id) {
                 hostId = id;
+                reconnectDelay = 1000;
+                if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
                 logDebug('Peer-ID erhalten: ' + id);
                 logDebug('PeerJS Cloud-Server erreichbar!');
                 document.getElementById('peerStatus').textContent = 'Verbunden';
@@ -1056,8 +1072,8 @@
             });
 
             peer.on('disconnected', function() {
-                logDebug('Vom PeerJS-Server getrennt! Versuche Reconnect...');
-                peer.reconnect();
+                logDebug('Vom PeerJS-Server getrennt - Reconnect mit Backoff...');
+                scheduleReconnect();
             });
         }
 
